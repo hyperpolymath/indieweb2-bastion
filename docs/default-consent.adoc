@@ -1,0 +1,2 @@
+= Default Consent Capability
+Stub definition for baseline contributor consent.

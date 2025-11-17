@@ -1,0 +1,5 @@
+* text=auto
+*.adoc linguist-documentation
+*.ncl linguist-language=Nickel
+*.surql linguist-language=SQL
+*.capnp linguist-language=Cap’n Proto

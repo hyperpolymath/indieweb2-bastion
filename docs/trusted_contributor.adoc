@@ -1,0 +1,2 @@
+= Trusted Contributor Capability
+Stub definition for verified contributor badge.

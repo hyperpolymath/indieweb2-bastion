@@ -1,0 +1,36 @@
+= Architecture
+:project-name: IndieWeb2
+
+== 🏗️ Overview
+IndieWeb2 is built around a **consent-first core** with pluggable modules:
+- **Core**: Bastion ingress, oDNS proxies/resolvers, GraphQL DNS API.
+- **Extensions**: SurrealDB provenance graph, browser extensions, CMS plugins.
+
+== 🔧 Components
+- **Bastion**: Hardened ingress with Podman/Wolfi, Envoy configs, mTLS enforcement.
+- **oDNS**: IPv6-native oblivious DNS with anycast + iBGP, HPKE encryption, ephemeral node rotation.
+- **GraphQL DNS**: Full RR coverage, reverse DNS schemas, DNSSEC toggles, append-only audit logs.
+- **SurrealDB Provenance Graph**: Identities, manifests, mentions, edges; JSON-LD export to IPFS/IPNS.
+- **Browser Extension**: Consent banners, provenance badges, webmention 2.0 composer.
+- **CMS Plugins**: WordPress/Ghost/Hugo integrations for auto-generating manifests and publishing to IPFS.
+
+== 🔒 Security Posture
+- Zone isolation with default-deny policies.
+- Hidden primaries for control-plane services.
+- Tamper-evident logging with hash chaining.
+- Threshold signatures for high-stakes operations.
+
+== 📂 Data Flow
+1. Client → Bastion Gateway (mTLS, rate limits, consent checks).
+2. Bastion → oDNS Proxy (encrypted queries).
+3. Proxy → Resolver (HPKE decryption, no client IP).
+4. Resolver → Upstream DNS (standard resolution).
+5. SurrealDB → Export provenance graph → IPFS/IPNS snapshot.
+6. Browser Extension → Fetch manifests, render consent + provenance UX.
+
+== 🛠️ Extensibility
+- CURPS policy engine compiled to WASM for portable enforcement.
+- GraphQL federation adapters for HE, Cloudflare, Route53.
+- SurrealDB schema extensible for new node/edge types.
+- Plugins for CMS and static site generators.
+

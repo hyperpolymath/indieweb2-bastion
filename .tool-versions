@@ -1,0 +1,6 @@
+deno 1.43.0
+nickel 1.2.0
+just 1.15.0
+capnp 0.10.4
+surrealdb 1.0.0
+bash 5.2.15

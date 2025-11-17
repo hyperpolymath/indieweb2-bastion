@@ -1,0 +1,35 @@
+stages:
+  - lint
+  - build
+  - test
+  - deploy
+
+lint:
+  stage: lint
+  script:
+    - just validate
+
+solidity:
+  stage: build
+  script:
+    - just solidity-build
+
+vyper:
+  stage: build
+  script:
+    - just vyper-build
+
+motoko:
+  stage: build
+  script:
+    - just motoko-deploy
+
+test:
+  stage: test
+  script:
+    - echo "Run unit/integration tests here"
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Push artifacts or deploy to ICP/Ethereum here"

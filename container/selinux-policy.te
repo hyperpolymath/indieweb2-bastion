@@ -1,0 +1,8 @@
+module bastion 1.0;
+
+require {
+  type container_t;
+  class process { transition };
+}
+
+# Stub SELinux policy: restrict container_t transitions

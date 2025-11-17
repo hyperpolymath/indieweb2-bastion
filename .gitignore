@@ -1,0 +1,27 @@
+# Build and temp
+/tmp/
+/.tmp/
+/build/
+/dist/
+/out/
+/coverage/
+
+# Node / ReScript
+node_modules/
+/lib/js/
+/lib/bs/
+
+# Deno cache
+.deno/
+
+# Logs
+*.log
+
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# OS cruft
+.DS_Store
+Thumbs.db
