@@ -76,3 +76,13 @@ gui-dev: bootstrap
 # Full pipeline
 # ---------------------------
 all: validate policy-gate sign-policy verify-publish gui-dev
+
+# Tidy the root directory of build artefacts and misplaced files
+tidy-root:
+    @echo "Tidying root directory..."
+    @./scripts/tidy_root.oil
+
+# Interactively tidy the repository of build artefacts and duplicates
+interactive-tidy:
+    @echo "Starting interactive tidy..."
+    @./scripts/interactive_tidy.sh

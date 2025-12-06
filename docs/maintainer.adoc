@@ -1,2 +1,0 @@
-= Maintainer Capability
-Stub definition for project stewardship.

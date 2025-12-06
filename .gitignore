@@ -1,27 +1,19 @@
-# Build and temp
-/tmp/
-/.tmp/
-/build/
-/dist/
-/out/
-/coverage/
-
-# Node / ReScript
+# Node.js / ReScript dependencies
 node_modules/
-/lib/js/
-/lib/bs/
 
-# Deno cache
-.deno/
+# Build artefacts & templates
+{{POLICY_JSON}}
+{{POLICY_JSON}}.prev
+{{POLICY_PRETTY}}
+{{TMP_DIR}}/
 
-# Logs
-*.log
+# Local metadata
+tree.txt
+tree2.txt
 
-# Secrets
-.env
-.env.local
-.env.*.local
-
-# OS cruft
+# OS-specific
 .DS_Store
 Thumbs.db
+
+# Our temporary junk folder
+_JUNK_TO_DELETE/

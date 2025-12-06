@@ -1,0 +1,721 @@
+= Performance Optimization - indieweb2-bastion
+:toc: macro
+
+[abstract]
+--
+Performance benchmarks, gas optimization, and throughput analysis for multi-chain platform. Rhodium Standard 0.5, Pillar 1, Section 1.4.
+--
+
+toc::[]
+
+== Overview
+
+**Performance philosophy:**
+* Gas efficiency critical for Ethereum/Polygon (user pays)
+* Optimize for query/update cycles on Internet Computer
+* Multi-chain latency considerations
+* User-facing transaction confirmation times
+
+**Key metrics:**
+* **Gas cost:** Identity registration < 100k gas (~$2-5 on Ethereum)
+* **IC query time:** < 100ms (p95)
+* **IC update time:** < 3s (p95)
+* **Cross-chain sync:** < 60s (eventual consistency)
+
+== Smart Contract Gas Optimization
+
+=== Foundry Gas Reporting
+
+**Run gas reports:**
+[source,bash]
+----
+forge test --gas-report
+----
+
+**Expected output:**
+[source]
+----
+| Contract           | Function             | Gas    |
+|--------------------|----------------------|--------|
+| IdentityRegistry   | registerIdentity     | 52341  |
+| IdentityRegistry   | updateContentHash    | 24567  |
+| IdentityRegistry   | getIdentity          | 1234   |
+----
+
+**Continuous monitoring:**
+[source,bash]
+----
+# In CI: Compare gas usage between commits
+forge snapshot
+git add .gas-snapshot
+git commit -m "chore: update gas snapshot"
+----
+
+=== Gas Optimization Patterns
+
+**1. Storage optimization:**
+[source,solidity]
+----
+// BAD: Multiple storage slots
+contract BadIdentity {
+    mapping(address => string) public dids;           // Slot 0
+    mapping(address => bytes32) public contentHashes; // Slot 1
+    mapping(address => uint256) public timestamps;    // Slot 2
+    mapping(address => bool) public verified;         // Slot 3
+}
+
+// GOOD: Pack into struct (single storage slot per address)
+contract GoodIdentity {
+    struct Identity {
+        string did;              // Dynamic (separate storage)
+        bytes32 contentHash;     // 32 bytes
+        uint256 timestamp;       // 32 bytes
+        bool verified;           // 1 byte (packed with timestamp)
+    }
+    mapping(address => Identity) public identities;  // Single mapping
+}
+
+// Gas savings: ~20k gas on registration
+----
+
+**2. Use events for historical data:**
+[source,solidity]
+----
+// BAD: Store all updates on-chain
+contract BadIdentity {
+    struct Update {
+        bytes32 contentHash;
+        uint256 timestamp;
+    }
+    mapping(address => Update[]) public updateHistory;  // Expensive!
+
+    function updateContentHash(bytes32 _hash) external {
+        updateHistory[msg.sender].push(Update(_hash, block.timestamp));
+        // Cost: ~20k gas per update
+    }
+}
+
+// GOOD: Use events (much cheaper)
+contract GoodIdentity {
+    mapping(address => bytes32) public contentHashes;
+
+    event ContentHashUpdated(
+        address indexed account,
+        bytes32 indexed oldHash,
+        bytes32 indexed newHash,
+        uint256 timestamp
+    );
+
+    function updateContentHash(bytes32 _hash) external {
+        bytes32 oldHash = contentHashes[msg.sender];
+        contentHashes[msg.sender] = _hash;
+        emit ContentHashUpdated(msg.sender, oldHash, _hash, block.timestamp);
+        // Cost: ~5k gas per update
+    }
+}
+
+// Gas savings: 15k gas per update (75% reduction)
+----
+
+**3. Optimize loops:**
+[source,solidity]
+----
+// BAD: Unbounded loop
+function verifyAll(address[] memory accounts) external {
+    for (uint256 i = 0; i < accounts.length; i++) {
+        identities[accounts[i]].verified = true;  // Can run out of gas!
+    }
+}
+
+// GOOD: Batch with limits
+function verifyBatch(address[] memory accounts) external {
+    require(accounts.length <= 50, "Batch too large");
+    for (uint256 i = 0; i < accounts.length; i++) {
+        identities[accounts[i]].verified = true;
+    }
+}
+
+// BETTER: Use merkle proof for verification
+function verify(bytes32[] memory proof) external {
+    require(MerkleProof.verify(proof, merkleRoot, keccak256(abi.encodePacked(msg.sender))));
+    identities[msg.sender].verified = true;
+}
+----
+
+**4. Use immutable for constants:**
+[source,solidity]
+----
+// BAD: Storage variable (2100 gas per read)
+contract BadIdentity {
+    address public admin;  // Storage slot
+
+    constructor(address _admin) {
+        admin = _admin;
+    }
+}
+
+// GOOD: Immutable (embedded in bytecode, ~100 gas)
+contract GoodIdentity {
+    address public immutable admin;
+
+    constructor(address _admin) {
+        admin = _admin;
+    }
+}
+
+// Gas savings: ~2k gas per admin check
+----
+
+**5. Minimize SLOAD operations:**
+[source,solidity]
+----
+// BAD: Multiple SLOADs
+function updateIfVerified(bytes32 _hash) external {
+    if (identities[msg.sender].verified) {  // SLOAD 1
+        identities[msg.sender].contentHash = _hash;  // SLOAD 2, SSTORE
+    }
+}
+
+// GOOD: Cache in memory
+function updateIfVerified(bytes32 _hash) external {
+    Identity storage identity = identities[msg.sender];  // SLOAD 1
+    if (identity.verified) {
+        identity.contentHash = _hash;  // SSTORE only
+    }
+}
+
+// Gas savings: ~2.1k gas (one SLOAD avoided)
+----
+
+=== Gas Benchmarking
+
+**Foundry gas tests:**
+[source,solidity]
+----
+// test/IdentityRegistry.gas.t.sol
+contract IdentityRegistryGasTest is Test {
+    IdentityRegistry public registry;
+
+    function setUp() public {
+        registry = new IdentityRegistry();
+    }
+
+    function testGasRegisterIdentity() public {
+        uint256 gasBefore = gasleft();
+        registry.registerIdentity("did:example:123", bytes32(0));
+        uint256 gasUsed = gasBefore - gasleft();
+
+        // Assert gas usage is within budget
+        assertLt(gasUsed, 100000, "Registration exceeds gas budget");
+        console.log("Registration gas:", gasUsed);
+    }
+
+    function testGasUpdateContentHash() public {
+        registry.registerIdentity("did:example:123", bytes32(0));
+
+        uint256 gasBefore = gasleft();
+        registry.updateContentHash(bytes32(uint256(1)));
+        uint256 gasUsed = gasBefore - gasleft();
+
+        assertLt(gasUsed, 50000, "Update exceeds gas budget");
+        console.log("Update gas:", gasUsed);
+    }
+}
+----
+
+**Run with gas report:**
+[source,bash]
+----
+forge test --match-contract GasTest -vvv --gas-report
+----
+
+== Internet Computer Performance
+
+=== Canister Profiling
+
+**Motoko profiling:**
+[source,motoko]
+----
+import Debug "mo:base/Debug";
+import Time "mo:base/Time";
+
+actor Identity {
+    func profile<T>(label : Text, fn : () -> T) : T {
+        let start = Time.now();
+        let result = fn();
+        let end = Time.now();
+        Debug.print(label # ": " # debug_show(end - start) # "ns");
+        result
+    };
+
+    public func register(did : Text, hash : Blob) : async Result.Result<(), Text> {
+        profile("register", func() : Result.Result<(), Text> {
+            // Registration logic
+            #ok()
+        })
+    };
+}
+----
+
+**Check canister cycles:**
+[source,bash]
+----
+dfx canister status identity_canister
+----
+
+**Expected output:**
+[source]
+----
+Canister status: Running
+Controllers: principal-id
+Memory allocation: 0
+Compute allocation: 0
+Freezing threshold: 2_592_000
+Memory Size: 1_234_567 (1.2 MB)
+Balance: 3_000_000_000_000 Cycles
+----
+
+=== Query vs Update Optimization
+
+**Use queries for read-only operations:**
+[source,motoko]
+----
+// GOOD: Query (fast, no consensus)
+public query func getIdentity(principal : Principal) : async ?IdentityRecord {
+    Array.find<(Principal, IdentityRecord)>(
+        identities,
+        func ((p, _)) = p == principal
+    ).1
+}
+
+// BAD: Update for read-only (slow, consensus required)
+public func getIdentity(principal : Principal) : async ?IdentityRecord {
+    // Same logic but 100x slower!
+}
+----
+
+**Performance difference:**
+* **Query:** ~100ms (single replica)
+* **Update:** ~2-3s (consensus across subnet)
+
+=== Stable Memory Optimization
+
+**Use stable variables for persistence:**
+[source,motoko]
+----
+import StableMemory "mo:base/ExperimentalStableMemory";
+
+actor Identity {
+    // BAD: Heap memory (limited to ~4GB, cleared on upgrade)
+    var identities : [(Principal, IdentityRecord)] = [];
+
+    // GOOD: Stable memory (preserved across upgrades)
+    stable var identities : [(Principal, IdentityRecord)] = [];
+}
+----
+
+**Stable memory limits:**
+* **Heap memory:** 4 GB per canister
+* **Stable memory:** 48 GB per canister (expandable)
+
+=== Canister Upgrade Performance
+
+**Measure upgrade time:**
+[source,bash]
+----
+time dfx deploy identity_canister
+----
+
+**Expected:**
+* **Small canister (<1MB state):** < 10s
+* **Medium canister (1-10MB state):** < 30s
+* **Large canister (>10MB state):** < 2 minutes
+
+**Pre-upgrade optimization:**
+[source,motoko]
+----
+system func preupgrade() {
+    // Minimize data copying
+    stableIdentities := Iter.toArray(identities.entries());
+};
+
+system func postupgrade() {
+    // Rebuild data structures efficiently
+    for ((principal, record) in stableIdentities.vals()) {
+        identities.put(principal, record);
+    };
+    stableIdentities := [];  // Free memory
+};
+----
+
+== Cross-Chain Performance
+
+=== Transaction Finality Times
+
+[cols="1,1,1,1",options="header"]
+|===
+|Chain |Confirmation |Finality |Cost
+|Ethereum Mainnet |~15s (1 block) |~15 minutes (64 blocks) |$2-50
+|Polygon |~2s (1 block) |~1 minute (30 blocks) |$0.01-0.10
+|Internet Computer |~2s (update) |~2s (immediate) |~$0.0001
+|===
+
+**Implications:**
+* Use IC for real-time operations
+* Use Polygon for cost-effective EVM operations
+* Use Ethereum mainnet for high-value assets only
+
+=== Cross-Chain Sync Performance
+
+**Architecture:**
+[source]
+----
+User → IC Canister (write) → Event Log
+                              ↓
+                         Bridge Service
+                              ↓
+                    Ethereum/Polygon (sync)
+----
+
+**Sync timing:**
+1. **IC write:** 2-3s (update call)
+2. **Event emission:** Immediate
+3. **Bridge detection:** 5-10s (polling interval)
+4. **EVM transaction:** 15-30s (block time + confirmation)
+5. **Total:** 30-60s
+
+**Optimization strategies:**
+[source,typescript]
+----
+// BAD: Sync every update
+async function updateIdentity(did: string, hash: string) {
+    await icCanister.update(did, hash);
+    await evmContract.update(did, hash);  // Wait for both!
+}
+
+// GOOD: Async sync via queue
+async function updateIdentity(did: string, hash: string) {
+    await icCanister.update(did, hash);  // Wait for IC only
+    syncQueue.push({ did, hash });       // Queue EVM sync
+    return;  // Return immediately
+}
+----
+
+== oDNS Performance
+
+=== Query Resolution Time
+
+**Target latency:**
+* **DNS query (UDP):** < 50ms
+* **Proxy hop:** + 10-20ms
+* **Total:** < 100ms (p95)
+
+**Measurement:**
+[source,bash]
+----
+dig @odns-proxy.example.com example.com +stats
+----
+
+**Expected output:**
+[source]
+----
+;; Query time: 45 msec
+;; SERVER: 10.0.0.1#53(10.0.0.1)
+;; WHEN: Mon Jan 21 12:34:56 UTC 2025
+----
+
+=== Cache Optimization
+
+**DNS caching strategy:**
+[source]
+----
+Record Type     TTL         Cache Layer
+A/AAAA          300s        Proxy + Client
+CNAME           3600s       Proxy + Client
+TXT             300s        Proxy only
+----
+
+**Cache hit rate target:** > 80%
+
+**Monitor cache performance:**
+[source,bash]
+----
+# Check cache stats
+redis-cli INFO stats | grep keyspace
+----
+
+== Load Testing
+
+=== Smart Contract Load Testing
+
+**Foundry invariant testing:**
+[source,solidity]
+----
+// test/IdentityRegistry.invariant.t.sol
+contract IdentityRegistryInvariantTest is Test {
+    IdentityRegistry public registry;
+    Handler public handler;
+
+    function setUp() public {
+        registry = new IdentityRegistry();
+        handler = new Handler(registry);
+
+        // Target handler for invariant tests
+        targetContract(address(handler));
+    }
+
+    // Invariant: No address can register twice
+    function invariant_noDoubleRegistration() public {
+        assertTrue(handler.registrationCount() <= handler.uniqueAddresses());
+    }
+
+    // Invariant: Gas usage within bounds
+    function invariant_gasWithinBounds() public {
+        uint256 avgGas = handler.totalGasUsed() / handler.registrationCount();
+        assertLt(avgGas, 100000);
+    }
+}
+
+contract Handler {
+    IdentityRegistry public registry;
+    uint256 public registrationCount;
+    uint256 public totalGasUsed;
+    mapping(address => bool) public registered;
+
+    function registerIdentity(string memory did) public {
+        if (!registered[msg.sender] && bytes(did).length > 0) {
+            uint256 gasBefore = gasleft();
+            registry.registerIdentity(did, bytes32(0));
+            totalGasUsed += gasBefore - gasleft();
+            registered[msg.sender] = true;
+            registrationCount++;
+        }
+    }
+}
+----
+
+**Run invariant tests:**
+[source,bash]
+----
+forge test --match-contract Invariant -vvv
+----
+
+=== Internet Computer Load Testing
+
+**Canister stress test:**
+[source,typescript]
+----
+// test/stress.test.ts
+import { Actor, HttpAgent } from '@dfinity/agent';
+
+async function stressTest() {
+    const agent = new HttpAgent({ host: 'http://localhost:8000' });
+    const canister = Actor.createActor(idlFactory, { agent, canisterId });
+
+    const CONCURRENT_REQUESTS = 100;
+    const TOTAL_REQUESTS = 10000;
+
+    const results = [];
+    for (let i = 0; i < TOTAL_REQUESTS; i += CONCURRENT_REQUESTS) {
+        const batch = Array(CONCURRENT_REQUESTS).fill(0).map((_, j) => {
+            const start = Date.now();
+            return canister.register(`did:test:${i + j}`, new Uint8Array(32))
+                .then(() => Date.now() - start)
+                .catch(err => ({ error: err }));
+        });
+
+        const batchResults = await Promise.all(batch);
+        results.push(...batchResults);
+
+        console.log(`Progress: ${i + CONCURRENT_REQUESTS}/${TOTAL_REQUESTS}`);
+    }
+
+    // Analyze results
+    const latencies = results.filter(r => typeof r === 'number');
+    const errors = results.filter(r => r.error);
+
+    console.log('Latency p50:', percentile(latencies, 0.5));
+    console.log('Latency p95:', percentile(latencies, 0.95));
+    console.log('Latency p99:', percentile(latencies, 0.99));
+    console.log('Error rate:', (errors.length / results.length * 100).toFixed(2) + '%');
+}
+----
+
+=== Artillery Multi-Chain Testing
+
+**Configuration (artillery.yml):**
+[source,yaml]
+----
+config:
+  target: "https://api.indieweb2-bastion.example.com"
+  phases:
+    - duration: 300
+      arrivalRate: 10
+      name: "Sustained load"
+
+scenarios:
+  - name: "Multi-chain flow"
+    flow:
+      # IC query (fast)
+      - get:
+          url: "/ic/identity/{{ $randomString(32) }}"
+          expect:
+            - statusCode: [200, 404]
+            - contentType: json
+            - maxResponseTime: 200
+
+      # IC update (slower)
+      - post:
+          url: "/ic/identity"
+          json:
+            did: "did:test:{{ $randomString(16) }}"
+            contentHash: "{{ $randomString(64) }}"
+          expect:
+            - statusCode: 200
+            - maxResponseTime: 5000
+
+      # EVM query (medium)
+      - get:
+          url: "/evm/polygon/identity/0x{{ $randomString(40) }}"
+          expect:
+            - statusCode: [200, 404]
+            - maxResponseTime: 1000
+----
+
+**Run test:**
+[source,bash]
+----
+artillery run artillery.yml --output report.json
+artillery report report.json
+----
+
+== Performance Budgets
+
+=== Gas Cost Budgets
+
+[cols="1,1,1,1",options="header"]
+|===
+|Operation |Target Gas |Max Gas |Est. Cost (Polygon)
+|registerIdentity |50k |100k |$0.01
+|updateContentHash |20k |50k |$0.005
+|verify |15k |30k |$0.003
+|getIdentity (view) |2k |5k |Free
+|===
+
+=== Latency Budgets
+
+[cols="1,1,1,1",options="header"]
+|===
+|Operation |p50 |p95 |p99
+|IC query |50ms |100ms |200ms
+|IC update |1s |3s |5s
+|EVM transaction (Polygon) |5s |15s |30s
+|Cross-chain sync |30s |60s |120s
+|oDNS query |30ms |100ms |200ms
+|===
+
+=== Throughput Targets
+
+**Internet Computer:**
+* **Query calls:** 1000+ req/s per canister
+* **Update calls:** 100+ req/s per canister (subnet-limited)
+
+**Ethereum/Polygon:**
+* **Transactions:** Limited by block gas limit (~30M gas/block)
+* **Polygon throughput:** ~100 tx/s (if each tx uses ~300k gas)
+
+== Monitoring in Production
+
+=== Gas Usage Monitoring
+
+**Track gas costs:**
+[source,typescript]
+----
+// After each transaction
+const receipt = await tx.wait();
+const gasUsed = receipt.gasUsed.toNumber();
+const gasPrice = receipt.effectiveGasPrice.toNumber();
+const costInWei = gasUsed * gasPrice;
+const costInUSD = costInWei / 1e18 * ethPrice;
+
+// Log to monitoring
+metrics.recordGasCost('registerIdentity', gasUsed, costInUSD);
+----
+
+=== IC Cycles Monitoring
+
+**Monitor canister cycles:**
+[source,bash]
+----
+# Check cycles balance
+dfx canister status identity_canister | grep Balance
+
+# Alert if balance < 1T cycles
+----
+
+**Refill automation:**
+[source,bash]
+----
+# Auto-refill script
+if [ $(dfx canister status $CANISTER_ID | grep -oP 'Balance: \K\d+') -lt 1000000000000 ]; then
+    dfx ledger top-up --amount 5.0 $CANISTER_ID
+fi
+----
+
+=== Custom Metrics
+
+**Application-level metrics:**
+[source,typescript]
+----
+// Track cross-chain sync lag
+const icTimestamp = await icCanister.getLastUpdate(did);
+const evmTimestamp = await evmContract.getLastUpdate(did);
+const syncLag = evmTimestamp - icTimestamp;
+
+metrics.recordSyncLag(syncLag);
+
+// Alert if sync lag > 120s
+if (syncLag > 120000) {
+    alerts.send('Cross-chain sync delayed');
+}
+----
+
+== Optimization Checklist
+
+**Smart Contracts:**
+- [ ] Storage layout optimized (packed structs)
+- [ ] Events used instead of storage for historical data
+- [ ] Immutable used for constructor-set constants
+- [ ] Loops bounded with max iteration limits
+- [ ] SLOAD operations minimized (cache in memory)
+- [ ] Gas snapshots tracked in CI
+
+**Internet Computer:**
+- [ ] Queries used for read-only operations
+- [ ] Stable variables for persistent state
+- [ ] Pre/postupgrade optimized
+- [ ] Cycles monitoring automated
+- [ ] Canister size < 10MB
+
+**Cross-Chain:**
+- [ ] Async sync patterns implemented
+- [ ] Eventual consistency documented
+- [ ] Retry logic for failed syncs
+- [ ] Circuit breakers for cascade failures
+
+**Monitoring:**
+- [ ] Gas costs tracked per operation
+- [ ] Latency percentiles measured (p50, p95, p99)
+- [ ] Error rates monitored
+- [ ] Alerts configured for SLO violations
+
+== Resources
+
+* Foundry Gas Optimization: https://book.getfoundry.sh/forge/gas-reports
+* Solidity Gas Optimization: https://github.com/iskdrews/awesome-solidity-gas-optimization
+* IC Performance Best Practices: https://internetcomputer.org/docs/current/developer-docs/deploy/computation-and-storage-costs
+* Ethereum Gas Tracker: https://etherscan.io/gastracker
+
+---
+
+_Last Updated: 2025-01-21 | Rhodium Standard 0.5_
