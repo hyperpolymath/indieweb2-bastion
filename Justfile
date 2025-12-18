@@ -1,88 +1,68 @@
-# IndieWeb2 Bastion — Superoptimised Justfile
-set shell := ["bash", "-cu"]
+set shell := ["bash", "-c"]
 
-# Paths
-TMP_DIR := ".tmp"
-POLICY_DIR := "policy/curps"
-POLICY_NCL := "{{POLICY_DIR}}/policy.ncl"
-POLICY_JSON := "{{TMP_DIR}}/policy.json"
+# Default recipe
+default: list
 
-RESCRIPT_OUT_CLI := "lib/js/src/PolicyGateCLI.js"
-DENO_SIGN := "policy/runner/crypto/sign_policy.js"
-DENO_RUNNER := "policy/runner/policy/run.js"
+# List all available recipes
+list:
+    @just --list
 
-# ---------------------------
-# Bootstrap (dirs + tools)
-# ---------------------------
+# ---------------------------------------------------------
+# 1. BOOTSTRAP & PRE-FLIGHT
+# ---------------------------------------------------------
+
+# Install dependencies (RSR: Deno, Nickel, Podman)
 bootstrap:
-  mkdir -p {{TMP_DIR}} policy/runner/crypto policy/runner/policy sbom logging products/pwa/build
-  if ! command -v jq >/dev/null; then sudo dnf install -y jq; fi
-  if ! command -v capnp >/dev/null; then sudo dnf install -y capnproto; fi
-  if ! command -v nickel >/dev/null; then \
-    echo "Installing Nickel..."; \
-    curl -L https://github.com/tweag/nickel/releases/latest/download/nickel-x86_64-unknown-linux-gnu.tar.gz \
-      | tar xz -C /usr/local/bin; \
-  fi
-  if ! command -v deno >/dev/null; then \
-    echo "Installing Deno..."; \
-    curl -fsSL https://deno.land/install.sh | sh; \
-    export PATH="$$HOME/.deno/bin:$$PATH"; \
-  fi
+    @echo ">>> [RSR] Bootstrapping Environment..."
+    @# Check for Deno
+    @if ! command -v deno &> /dev/null; then echo "Installing Deno..."; curl -fsSL https://deno.land/x/install/install.sh | sh; fi
+    @# Check for Nickel
+    @if ! command -v nickel &> /dev/null; then echo "Installing Nickel..."; cargo install nickel-lang-cli; fi
+    @# Check for Just
+    @if ! command -v just &> /dev/null; then echo "Installing Just..."; cargo install just; fi
+    @echo ">>> Bootstrap complete."
 
-# ---------------------------
-# Validation
-# ---------------------------
-validate: bootstrap
-  nickel export {{POLICY_NCL}} > {{POLICY_JSON}}
-  capnp compile -oc++ surrealdb/provenance.capnp
-  surreal validate surrealdb/schema.surql
+# Verify Nickel policies
+verify-policy:
+    @echo ">>> [RSR] Verifying Nickel Contracts..."
+    nickel export config/main.ncl > /dev/null
+    @echo ">>> Policies Valid."
 
-validate-eval: bootstrap
-  nickel eval {{POLICY_NCL}} > /dev/null
+# ---------------------------------------------------------
+# 2. BUILD
+# ---------------------------------------------------------
 
-validate-pretty: bootstrap
-  nickel export {{POLICY_NCL}} | jq . > {{TMP_DIR}}/policy.pretty.json
+# Build the Wolfi-based Bastion container
+build: verify-policy
+    @echo ">>> [Podman] Building Bastion (Wolfi Base)..."
+    podman build -t indieweb2-bastion -f container/Containerfile .
 
-# ---------------------------
-# ReScript policy gate
-# ---------------------------
-rescript-build:
-  npx rescript build
+# Generate shell installation vectors
+gen-scripts:
+    @echo ">>> Generating multi-shell bootstrap scripts..."
+    # This would link to a script generator, ensuring consistency
+    deno run --allow-write scripts/generate_shells.ts
 
-policy-gate: validate rescript-build
-  node {{RESCRIPT_OUT_CLI}} {{POLICY_JSON}}
+# ---------------------------------------------------------
+# 3. DEPLOY
+# ---------------------------------------------------------
 
-# ---------------------------
-# Deno signing & publishing
-# ---------------------------
-sign-policy: validate
-  deno run --allow-read --allow-write --unstable {{DENO_SIGN}} {{POLICY_JSON}} {{TMP_DIR}}/policy.sig
+# Deploy via Podman (Rootless)
+deploy: build
+    @echo ">>> [Podman] Deploying Bastion..."
+    podman run -d --name bastion --restart always -p 8443:8443 indieweb2-bastion
 
-verify-publish:
-  deno run --allow-read --allow-run --allow-write --unstable {{DENO_RUNNER}} {{POLICY_JSON}} {{TMP_DIR}}/policy.sig.json
+# Stop and remove the deployment
+clean:
+    podman stop bastion || true
+    podman rm bastion || true
 
-# ---------------------------
-# GUI / PWA dev server with port check
-# ---------------------------
-gui-dev: bootstrap
-  PORT=8443; \
-  if ss -ltn | grep -q ":$$PORT "; then \
-    echo "Port $$PORT in use. Trying 8080..."; PORT=8080; \
-  fi; \
-  echo "Starting static server on port $$PORT"; \
-  deno run --allow-read --allow-net scripts/static_serve.js products/pwa/public $$PORT
+# ---------------------------------------------------------
+# 4. RELEASE
+# ---------------------------------------------------------
 
-# ---------------------------
-# Full pipeline
-# ---------------------------
-all: validate policy-gate sign-policy verify-publish gui-dev
-
-# Tidy the root directory of build artefacts and misplaced files
-tidy-root:
-    @echo "Tidying root directory..."
-    @./scripts/tidy_root.oil
-
-# Interactively tidy the repository of build artefacts and duplicates
-interactive-tidy:
-    @echo "Starting interactive tidy..."
-    @./scripts/interactive_tidy.sh
+# Tag and Sign the release
+release version:
+    @echo ">>> Release v{{version}}"
+    git tag -s v{{version}} -m "RSR Release v{{version}}"
+    git push origin v{{version}}
