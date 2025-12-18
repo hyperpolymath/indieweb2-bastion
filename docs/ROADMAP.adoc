@@ -1,12 +1,266 @@
 = Project Roadmap
-:project-name: IndieWeb2
+:project-name: IndieWeb2 Bastion
+:updated: 2025-12-17
+:toc: macro
 
-== 🗺️ Milestones
-- **v0.1**: Core manifests, bastion ingress, oDNS MVP, SurrealDB schema.
-- **v0.5**: GraphQL DNS full RR coverage, reverse DNS, CURPS WASM policy engine, browser extension beta.
-- **v1.0**: Enterprise-grade deployment, multi-region anycast, federation adapters (HE, Cloudflare, Route53).
-- **v2.0**: Threshold signatures, SDP overlays, privacy-preserving analytics.
-- **v3.0**: Formal verification of critical modules, education kits, standards proposals.
+toc::[]
 
-== 🔄 Dependency Handoffs
-- Bastion ingress → oDNS proxies → GraphQL DNS → SurrealDB provenance → Browser UX
+== Current Status
+
+**Phase:** Specification/Architecture (Documentation Complete)
+**Implementation:** 0% - No production code yet
+**SCM/Security:** Fully configured CI/CD pipelines
+
+== Completed
+
+=== Infrastructure & SCM (100%)
+
+* [x] GitHub Actions workflows (10 workflows)
+** CodeQL security analysis
+** OSSF Scorecard
+** Secret detection (TruffleHog)
+** Workflow security linter
+** TypeScript/JavaScript blocker (ReScript enforcement)
+** Security policy checks
+** Quality checks
+** Well-known standards (RFC 9116)
+** Repository mirroring (GitLab/Bitbucket)
+** Guix/Nix package policy
+
+* [x] Security configuration
+** SHA-pinned actions (supply chain security)
+** Dependabot (GitHub Actions, npm, Cargo, pip)
+** Comprehensive SECURITY.adoc
+** RFC 9116 security.txt
+
+* [x] Documentation
+** SECURITY.adoc (blockchain-specific)
+** PRIVACY.adoc
+** CONTRIBUTING.adoc
+** LICENSE (MIT OR AGPL-3.0-or-later)
+** CI_CD.adoc, TESTING.adoc
+** docs/FORMAL_SPEC.adoc
+** docs/ARCHITECTURE.adoc
+
+== Milestones
+
+=== v0.1 - Foundation (Next Priority)
+
+**Goal:** Core infrastructure and MVP contracts
+
+[cols="1,3,1,1"]
+|===
+|Task |Description |Effort |Status
+
+|Initialize Foundry
+|`forge init contracts` - Solidity dev framework
+|1 hour
+|TODO
+
+|Initialize dfx
+|`dfx new identity_canister` - IC SDK setup
+|1 hour
+|TODO
+
+|IdentityRegistry.sol
+|Core identity contract with tests
+|2-3 weeks
+|TODO
+
+|identity.mo canister
+|IC identity canister
+|2-3 weeks
+|TODO
+
+|Mumbai testnet deploy
+|Deploy to Polygon testnet
+|1 day
+|TODO
+
+|IC testnet deploy
+|Deploy to IC testnet
+|1 day
+|TODO
+|===
+
+=== v0.5 - GraphQL DNS & CURPS
+
+**Goal:** Full DNS coverage and policy engine
+
+* [ ] GraphQL DNS API with full RR support
+* [ ] Reverse DNS implementation
+* [ ] CURPS WASM policy engine
+* [ ] oDNS MVP (privacy-preserving DNS)
+* [ ] SurrealDB schema for provenance
+* [ ] Browser extension beta
+
+=== v1.0 - Production Ready
+
+**Goal:** Enterprise deployment
+
+* [ ] Multi-region anycast
+* [ ] Federation adapters (Hurricane Electric, Cloudflare, Route53)
+* [ ] External security audit
+* [ ] Cross-chain bridge service (Node.js/ReScript)
+* [ ] Gas optimization (< 100k gas per registration)
+* [ ] Mainnet deployment (with timelock governance)
+
+=== v2.0 - Advanced Features
+
+**Goal:** Enhanced privacy and security
+
+* [ ] Threshold signatures
+* [ ] SDP overlays
+* [ ] Privacy-preserving analytics
+* [ ] Advanced DID resolution
+
+=== v3.0 - Verification & Standards
+
+**Goal:** Formal verification and ecosystem
+
+* [ ] Formal verification (Certora) of critical modules
+* [ ] Education kits and tutorials
+* [ ] Standards proposals (DID methods)
+* [ ] Community governance
+
+== Dependency Chain
+
+[source]
+----
+Foundry/dfx init
+       │
+       ├──► IdentityRegistry.sol
+       │           │
+       │           └──► Testnet deploy (Mumbai)
+       │                       │
+       ├──► identity.mo        │
+       │           │           │
+       │           └──► IC testnet deploy
+       │                       │
+       └───────────────────────┼───────────────────►
+                               │
+                        Bridge Service (Node.js/ReScript)
+                               │
+                               ▼
+                        Integration Tests
+                               │
+                               ▼
+                        Security Audit
+                               │
+                               ▼
+                        Mainnet Deploy
+----
+
+== Security Priorities
+
+[cols="1,2,2"]
+|===
+|Priority |Item |Rationale
+
+|CRITICAL
+|SHA-pinned actions
+|Supply chain security - DONE
+
+|CRITICAL
+|No secrets in code
+|Credential protection - CI enforced
+
+|HIGH
+|ReentrancyGuard
+|Prevent reentrancy attacks
+
+|HIGH
+|Access control
+|Role-based permissions
+
+|MEDIUM
+|Gas optimization
+|Prevent gas griefing
+
+|MEDIUM
+|External audit
+|Third-party validation
+|===
+
+== Language Policy
+
+**ReScript-only for new code** (TS/JS blocked by CI)
+
+[cols="1,2,1"]
+|===
+|Language |Use Case |Status
+
+|ReScript
+|All new frontend/Node.js code
+|Required
+
+|Solidity
+|EVM smart contracts
+|Required
+
+|Motoko
+|Internet Computer canisters
+|Required
+
+|TypeScript/JavaScript
+|Legacy only, conversion needed
+|Blocked for new files
+|===
+
+== Success Metrics
+
+[cols="1,2,1,1"]
+|===
+|Metric |Target |Current |Status
+
+|Smart contracts deployed
+|3+ contracts
+|0
+|Not started
+
+|Test coverage (contracts)
+|90%+
+|N/A
+|Not started
+
+|Gas per registration
+|< 100k
+|N/A
+|Not started
+
+|IC query latency (p95)
+|< 100ms
+|N/A
+|Not started
+
+|Cross-chain sync
+|< 60s
+|N/A
+|Not started
+
+|Security audit
+|Pass
+|Not started
+|Not started
+
+|CI/CD pipelines
+|10 workflows
+|10
+|Complete
+
+|SHA-pinned actions
+|100%
+|100%
+|Complete
+|===
+
+== Resources
+
+* **Primary Repository:** GitHub (hyperpolymath/indieweb2-bastion)
+* **Mirrors:** GitLab, Bitbucket (auto-sync)
+* **License:** MIT OR AGPL-3.0-or-later
+* **Standard:** Rhodium 0.5
+
+---
+
+_Last Updated: 2025-12-17_
