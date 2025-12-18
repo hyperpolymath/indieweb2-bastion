@@ -1,0 +1,31 @@
+# RSR MCP Registry
+# Defines the Model Context Protocols available to the AI.
+
+let McpDef = {
+  name | String,
+  repo | String,
+  port | Number,
+}
+
+{
+  mcps = [
+    # 1. Poly-Git (Repository Management)
+    {
+      name = "poly-git",
+      repo = "https://github.com/hyperpolymath/poly-git-mcp",
+      port = 3001,
+    },
+    # 2. Poly-FS (Filesystem Access - RSR Sandboxed)
+    {
+      name = "poly-fs",
+      repo = "https://github.com/hyperpolymath/poly-fs-mcp",
+      port = 3002,
+    },
+    # 3. Poly-Salt (Infrastructure Control)
+    {
+      name = "poly-salt",
+      repo = "https://github.com/hyperpolymath/poly-salt-mcp",
+      port = 3003,
+    }
+  ]
+}
