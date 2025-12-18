@@ -1,75 +1,116 @@
 // src/scripts/Bastion.res
-// RSR Bastion: TLS 1.3 + ECH + HTTP/3 + IPFS Gateway
+// RSR Bastion: The Unified Gateway
+// Responsibilities:
+// 1. Ingress Security (TLS 1.3, ECH, HTTP/3, Headers)
+// 2. Routing: /mcp/* -> Sidecar MCPs (Poly-Pod)
+// 3. Routing: /ipfs/* -> Internal IPFS Node
+// 4. Routing: * -> Cadre Router (Service Mesh)
 
-type request
+// --- 1. TYPE DEFINITIONS & BINDINGS ---
+
+type headers = Js.Dict.t<string>
+
+type request = {
+  url: string,
+  method: string,
+  headers: headers,
+  body: Js.Nullable.t<string> // Stream/Body handling simplified for clarity
+}
+
 type response
-type serveOptions = { 
-  port: int, 
-  hostname: string, 
-  cert: option<string>, 
+type serveOptions = {
+  port: int,
+  hostname: string,
+  cert: option<string>,
   key: option<string>
 }
 
-@scope("Deno") external serve: ((request) => response, serveOptions) => unit = "serve"
-@new external makeResponse: (string, { "status": int, "headers": Js.Dict.t<string> }) => response = "Response"
+// Deno & Browser Globals
+@scope("Deno") external serve: ((request) => Js.Promise.t<response>, serveOptions) => unit = "serve"
 @scope("Deno") external readTextFileSync: string => string = "readTextFileSync"
+@new external makeResponse: (string, { "status": int, "headers": headers }) => response = "Response"
 
-// Minimal binding for Fetch (to proxy IPFS)
-@scope("globalThis") external fetch: string => Js.Promise.t<response> = "fetch"
+// Fetch for Proxying
+type fetchOptions = {
+  "method": string,
+  "headers": headers,
+  "body": Js.Nullable.t<string>
+}
+@scope("globalThis") external fetch: (string, fetchOptions) => Js.Promise.t<response> = "fetch"
 
-let handler = (req) => {
-  let url = "https://example.com/placeholder" // In real usage, parse req.url
-  
-  // 1. IPFS Gateway Logic
-  // If path starts with /ipfs/, proxy to internal node
-  /* NOTE: Real implementation needs URL parsing bindings. 
-     For this snippet, we show the header logic.
-  */
+// URL Parsing
+@new external makeUrl: string => { "pathname": string, "search": string } = "URL"
 
-  let headers = Js.Dict.empty()
-  Js.Dict.set(headers, "content-type", "application/json")
-  
-  // HTTP/3 Advertisement
-  Js.Dict.set(headers, "alt-svc", "h3=\":443\"; ma=86400")
-  
-  // Security
-  Js.Dict.set(headers, "strict-transport-security", "max-age=63072000; includeSubDomains; preload")
-  
-  // IPFS Header (Compatibility)
-  Js.Dict.set(headers, "x-ipfs-gateway", "IndieWeb2-Bastion")
 
-  makeResponse(
-    "{ \"status\": \"online\", \"proto\": \"HTTP/3\", \"ipfs_enabled\": true, \"ech_ready\": true }",
-    { "status": 200, "headers": headers }
-  )
+// --- 2. CORE LOGIC ---
+
+let handler = async (req) => {
+  // A. SECURITY HEADERS (Applied to every response)
+  let secureHeaders = Js.Dict.empty()
+  Js.Dict.set(secureHeaders, "Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+  Js.Dict.set(secureHeaders, "Content-Security-Policy", "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'")
+  Js.Dict.set(secureHeaders, "X-Content-Type-Options", "nosniff")
+  Js.Dict.set(secureHeaders, "Alt-Svc", "h3=\":443\"; ma=86400") // Advertises HTTP/3
+
+  // B. ROUTING
+  let urlObj = try { makeUrl(req.url) } catch { | _ => { "pathname": "/", "search": "" } }
+  let path = urlObj["pathname"]
+
+  // DESTINATION 1: MCP Sidecars (/mcp/git, /mcp/fs)
+  if (Js.String.startsWith("/mcp/", path)) {
+    let port = switch path {
+      | p if Js.String.includes("git", p) => "3001"
+      | p if Js.String.includes("fs", p)  => "3002"
+      | p if Js.String.includes("salt", p)=> "3003"
+      | _ => "0"
+    }
+
+    if (port != "0") {
+      let proxyUrl = "http://localhost:" ++ port ++ path
+      await fetch(proxyUrl, { "method": req.method, "headers": req.headers, "body": req.body })
+    } else {
+      makeResponse("MCP Not Found", { "status": 404, "headers": secureHeaders })
+    }
+  } 
+  
+  // DESTINATION 2: IPFS Gateway (/ipfs/Qm...)
+  else if (Js.String.startsWith("/ipfs/", path)) {
+    // Proxy to internal IPFS node (standard port 8080)
+    let proxyUrl = "http://localhost:8080" ++ path
+    
+    // Add IPFS compatibility header
+    Js.Dict.set(secureHeaders, "X-Ipfs-Gateway", "IndieWeb2-Bastion")
+    
+    await fetch(proxyUrl, { "method": req.method, "headers": req.headers, "body": req.body })
+  }
+
+  // DESTINATION 3: Cadre Router (Everything else)
+  else {
+    // The Cadre Router handles logic, AuthN, and Service Mesh dispatch
+    let proxyUrl = "http://localhost:3000" ++ path ++ urlObj["search"]
+    await fetch(proxyUrl, { "method": req.method, "headers": req.headers, "body": req.body })
+  }
 }
 
+
+// --- 3. INITIALIZATION ---
+
 let start = () => {
-  Js.Console.log(">>> [Bastion] Binding [::]:443 (Dual Stack + QUIC)...")
-  
-  // Certs required for HTTP/3 & ECH
+  Js.Console.log(">>> [Bastion] Initializing Unified Gateway...")
+  Js.Console.log("    - Mode: Dual Stack (IPv4 + IPv6)")
+  Js.Console.log("    - Proto: HTTP/3 (QUIC) + TLS 1.3")
+  Js.Console.log("    - Routes: MCP (3001-3003), IPFS (8080), Cadre (3000)")
+
+  // Load High-Assurance Certs (Generated by Crypto Loom)
   let cert = try { Some(readTextFileSync("/app/certs/fullchain.pem")) } catch { | _ => None }
   let key = try { Some(readTextFileSync("/app/certs/privkey.pem")) } catch { | _ => None }
 
+  if (Belt.Option.isNone(cert)) {
+    Js.Console.warn("!!! [Bastion] WARNING: No Certs found. QUIC/HTTP3 will fail. Run 'just certs' first.")
+  }
+
+  // Bind to [::]:443 (Dual Stack)
   serve(handler, { port: 443, hostname: "[::]", cert: cert, key: key })
 }
 
 start()
-
-// ... (Previous Bastion Code) ...
-
-let handler = async (req) => {
-  // If request is for a static asset, serve it (Logic omitted)
-  
-  // RSR: Forward everything else to Cadre Router (Internal Loopback)
-  let routerUrl = "http://localhost:3000" ++ getPath(req)
-  
-  // Proxy the request
-  let response = await fetch(routerUrl, {
-    method: req.method,
-    headers: req.headers,
-    body: req.body
-  })
-  
-  response
-}
