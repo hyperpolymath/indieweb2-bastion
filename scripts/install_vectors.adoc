@@ -1,0 +1,88 @@
+= Universal Installation Vectors
+:description: Installation one-liners for every supported shell environment.
+
+== 1. Standard Shells
+
+=== Bash
+[source,bash]
+----
+bash -c "$(curl -fsSL https://install.indieweb2.net/install.sh)"
+----
+
+=== Zsh
+[source,zsh]
+----
+zsh -c "$(curl -fsSL https://install.indieweb2.net/install.zsh)"
+----
+
+=== Fish
+[source,fish]
+----
+curl -fsSL https://install.indieweb2.net/install.fish | source
+----
+
+== 2. Modern / Alternative Shells
+
+=== Oil (Preferred)
+[source,oil]
+----
+curl -fsSL https://install.indieweb2.net/install.oil | osh
+----
+
+=== Nushell
+[source,nu]
+----
+http get https://install.indieweb2.net/install.nu | save -f install.nu; nu install.nu
+----
+
+=== Elvish
+[source,elvish]
+----
+curl -fsSL https://install.indieweb2.net/install.elv | epm:install
+----
+
+=== Murex
+[source,murex]
+----
+out < "https://install.indieweb2.net/install.mx" -> source
+----
+
+=== NGS
+[source,ngs]
+----
+ngs -e 'F("https://install.indieweb2.net/install.ngs").fetch().eval()'
+----
+
+== 3. Legacy / Compatibility Shells
+
+=== Ksh
+[source,ksh]
+----
+ksh -c "$(curl -fsSL https://install.indieweb2.net/install.ksh)"
+----
+
+=== Tcsh / Csh
+[source,tcsh]
+----
+curl -fsSL https://install.indieweb2.net/install.csh > install.csh; tcsh install.csh
+----
+
+=== Dash / Ash (Alpine/Minix)
+[source,sh]
+----
+wget -qO- https://install.indieweb2.net/install.sh | sh
+----
+
+== 4. Windows / Powershell
+
+=== PowerShell Core
+[source,pwsh]
+----
+Invoke-RestMethod https://install.indieweb2.net/install.ps1 | Invoke-Expression
+----
+
+=== Cmd
+[source,cmd]
+----
+@powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://install.indieweb2.net/install.ps1'))"
+----
