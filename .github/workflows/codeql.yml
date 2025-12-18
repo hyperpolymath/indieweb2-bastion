@@ -1,40 +1,52 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
-name: CodeQL Security Analysis
+name: "RSR-CodeQL"
 
 on:
   push:
-    branches: [main, master]
+    branches: [ "main" ]
   pull_request:
-    branches: [main, master]
+    branches: [ "main" ]
   schedule:
-    - cron: '0 6 * * 1'
-
-permissions: read-all
+    - cron: '30 1 * * 0'
 
 jobs:
   analyze:
+    name: Analyze
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       security-events: write
+
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - language: actions
-            build-mode: none
+        language: [ 'javascript', 'python' ]
+        # RSR Note: ReScript compiles to JS, so we scan 'javascript'.
+        # We also scan 'python' for the Robot bot.
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@662472033e021d55d94146f66f6058822b0b39fd # v3.28.1
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        # RSR: Disable autobuild to prevent crash
+        build-mode: manual
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@662472033e021d55d94146f66f6058822b0b39fd # v3.28.1
-        with:
-          category: "/language:${{ matrix.language }}"
+    # --- MANUAL BUILD START ---
+    - name: Set up Deno & ReScript (RSR Build)
+      if: matrix.language == 'javascript'
+      run: |
+        npm install -g rescript
+        # We don't need the full 'just' orchestrator here, 
+        # just the raw compilation to generate the JS for scanning.
+        rescript build -with-deps
+
+    # --- MANUAL BUILD END ---
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
