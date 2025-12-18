@@ -55,3 +55,21 @@ let start = () => {
 }
 
 start()
+
+// ... (Previous Bastion Code) ...
+
+let handler = async (req) => {
+  // If request is for a static asset, serve it (Logic omitted)
+  
+  // RSR: Forward everything else to Cadre Router (Internal Loopback)
+  let routerUrl = "http://localhost:3000" ++ getPath(req)
+  
+  // Proxy the request
+  let response = await fetch(routerUrl, {
+    method: req.method,
+    headers: req.headers,
+    body: req.body
+  })
+  
+  response
+}
