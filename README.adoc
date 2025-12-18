@@ -56,12 +56,14 @@ These will be checked and installed automatically by `just bootstrap` unless you
 * link:docs/capabilities/default-consent.adoc[Default Consent]
 
 
-=== Installation
-[source,bash]
+== Installation
+
+For full compatibility across all shells (Bash, Fish, Nu, Zsh, Powershell, etc.), see link:scripts/install_vectors.adoc[Installation Vectors].
+
+**Quick Start (Oil Shell):**
+[source,oil]
 ----
-git clone https://gitlab.com/hyperpolymath/indieweb2
-cd indieweb2-bastion
-just build
+curl -fsSL https://install.indieweb2.net/install.oil | osh
 ----
 
 == 📖 Basic Usage
