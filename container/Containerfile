@@ -1,0 +1,20 @@
+FROM cgr.dev/chainguard/wolfi-base:latest AS builder
+RUN apk add --no-cache build-base deno git npm
+WORKDIR /app
+COPY . .
+# Install local rescript
+RUN npm install rescript
+# Compile ReScript (Bastion + Generator)
+RUN ./node_modules/.bin/rescript build -with-deps
+# Run generator to create artifacts
+RUN deno run --allow-read --allow-write --allow-env src/scripts/GenerateShells.bs.js
+
+# Runtime
+FROM cgr.dev/chainguard/wolfi-base:latest
+RUN apk add --no-cache deno ca-certificates
+WORKDIR /app
+COPY --from=builder /app/src/scripts/*.bs.js ./dist/
+USER nonroot
+EXPOSE 8443
+# FIX: Run the Bastion Server
+CMD ["deno", "run", "--allow-net", "--allow-read", "dist/Bastion.bs.js"]
