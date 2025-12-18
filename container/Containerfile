@@ -4,17 +4,23 @@ WORKDIR /app
 COPY . .
 # Install local rescript
 RUN npm install rescript
-# Compile ReScript (Bastion + Generator)
+# Compile ReScript
 RUN ./node_modules/.bin/rescript build -with-deps
-# Run generator to create artifacts
+# Run generator
 RUN deno run --allow-read --allow-write --allow-env src/scripts/GenerateShells.bs.js
 
 # Runtime
 FROM cgr.dev/chainguard/wolfi-base:latest
-RUN apk add --no-cache deno ca-certificates
+# RSR: Add libcap to allow non-root bind to port 443
+RUN apk add --no-cache deno ca-certificates libcap
+
 WORKDIR /app
 COPY --from=builder /app/src/scripts/*.bs.js ./dist/
+
+# Grant Deno permission to bind privileged ports (<1024)
+RUN setcap 'cap_net_bind_service=+ep' $(readlink -f $(which deno))
+
 USER nonroot
-EXPOSE 8443
-# FIX: Run the Bastion Server
+EXPOSE 443
+
 CMD ["deno", "run", "--allow-net", "--allow-read", "dist/Bastion.bs.js"]
