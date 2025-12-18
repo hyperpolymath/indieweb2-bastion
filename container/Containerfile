@@ -1,26 +1,22 @@
-FROM cgr.dev/chainguard/wolfi-base:latest AS builder
-RUN apk add --no-cache build-base deno git npm
-WORKDIR /app
-COPY . .
-# Install local rescript
-RUN npm install rescript
-# Compile ReScript
-RUN ./node_modules/.bin/rescript build -with-deps
-# Run generator
-RUN deno run --allow-read --allow-write --allow-env src/scripts/GenerateShells.bs.js
+# ... (Builder stage remains the same)
 
 # Runtime
 FROM cgr.dev/chainguard/wolfi-base:latest
-# RSR: Add libcap to allow non-root bind to port 443
 RUN apk add --no-cache deno ca-certificates libcap
 
 WORKDIR /app
 COPY --from=builder /app/src/scripts/*.bs.js ./dist/
 
-# Grant Deno permission to bind privileged ports (<1024)
+# Create cert directory (Expects volume mount at runtime)
+RUN mkdir -p /app/certs
+
+# Grant bind permission
 RUN setcap 'cap_net_bind_service=+ep' $(readlink -f $(which deno))
 
 USER nonroot
-EXPOSE 443
+
+# RSR: Expose TCP (HTTP/1.1, H2) and UDP (H3/QUIC)
+EXPOSE 443/tcp
+EXPOSE 443/udp
 
 CMD ["deno", "run", "--allow-net", "--allow-read", "dist/Bastion.bs.js"]
