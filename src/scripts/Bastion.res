@@ -1,7 +1,6 @@
 // src/scripts/Bastion.res
 // RSR Bastion Gateway: Secure Deno Server
 
-// Minimal binding for Deno.serve
 type request
 type response
 type serveOptions = { port: int }
@@ -15,14 +14,14 @@ let handler = (_req) => {
   Js.Dict.set(headers, "strict-transport-security", "max-age=63072000; includeSubDomains; preload")
   
   makeResponse(
-    "{ \"status\": \"online\", \"system\": \"IndieWeb2 Bastion\", \"compliance\": \"RSR-Active\" }",
+    "{ \"status\": \"online\", \"system\": \"IndieWeb2 Bastion\", \"compliance\": \"RSR-Active\", \"port\": 443 }",
     { "status": 200, "headers": headers }
   )
 }
 
 let start = () => {
-  Js.Console.log(">>> [Bastion] Initializing Secure Gateway on :8443...")
-  serve(handler, { port: 8443 })
+  Js.Console.log(">>> [Bastion] Initializing Secure Gateway on :443...")
+  serve(handler, { port: 443 })
 }
 
 start()
