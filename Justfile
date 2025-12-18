@@ -58,10 +58,12 @@ build: verify-policy robot gen-scripts
 # 4. DEPLOY
 # ---------------------------------------------------------
 
-# Deploy via Podman (Rootless)
 deploy: build
     @echo ">>> [Podman] Deploying Bastion..."
-    podman run -d --name bastion --restart always -p 8443:8443 indieweb2-bastion
+    # UPDATED: Mapping Host 443 -> Container 443
+    # Note: If running rootless, you may need to use a high port on the host (e.g. -p 8443:443) 
+    # or ensure sysctl net.ipv4.ip_unprivileged_port_start=0 is set.
+    podman run -d --name bastion --restart always -p 443:443 indieweb2-bastion
 
 # Stop and remove the deployment
 clean:
