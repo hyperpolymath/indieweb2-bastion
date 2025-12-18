@@ -11,15 +11,12 @@ list:
 # 1. BOOTSTRAP & PRE-FLIGHT
 # ---------------------------------------------------------
 
-# Install dependencies (RSR: Deno, Nickel, Podman)
+# Install dependencies (RSR: Deno, Nickel, Podman, ReScript)
 bootstrap:
     @echo ">>> [RSR] Bootstrapping Environment..."
-    @# Check for Deno
     @if ! command -v deno &> /dev/null; then echo "Installing Deno..."; curl -fsSL https://deno.land/x/install/install.sh | sh; fi
-    @# Check for Nickel
     @if ! command -v nickel &> /dev/null; then echo "Installing Nickel..."; cargo install nickel-lang-cli; fi
-    @# Check for Just
-    @if ! command -v just &> /dev/null; then echo "Installing Just..."; cargo install just; fi
+    @if ! command -v rescript &> /dev/null; then echo "Installing ReScript..."; npm install -g rescript; fi
     @echo ">>> Bootstrap complete."
 
 # Verify Nickel policies
@@ -29,22 +26,36 @@ verify-policy:
     @echo ">>> Policies Valid."
 
 # ---------------------------------------------------------
-# 2. BUILD
+# 2. MAINTENANCE (Python/Salt)
 # ---------------------------------------------------------
 
+# Run the Python SaltStack bot for local self-healing
+robot:
+    @echo ">>> [Robot] Awakening..."
+    python3 maintenance/robot.py
+
+# ---------------------------------------------------------
+# 3. BUILD & GENERATE (ReScript)
+# ---------------------------------------------------------
+
+# Compile ReScript sources (No TS allowed)
+compile:
+    @echo ">>> [ReScript] Compiling..."
+    rescript build -with-deps
+
+# Generate shell vectors using the compiled ReScript artifact
+gen-scripts: compile
+    @echo ">>> Running Shell Generator..."
+    # strict usage of compiled JS artifact via Deno
+    deno run --allow-read --allow-write --allow-env src/scripts/GenerateShells.bs.js
+
 # Build the Wolfi-based Bastion container
-build: verify-policy
+build: verify-policy robot gen-scripts
     @echo ">>> [Podman] Building Bastion (Wolfi Base)..."
     podman build -t indieweb2-bastion -f container/Containerfile .
 
-# Generate shell installation vectors
-gen-scripts:
-    @echo ">>> Generating multi-shell bootstrap scripts..."
-    # This would link to a script generator, ensuring consistency
-    deno run --allow-write scripts/generate_shells.ts
-
 # ---------------------------------------------------------
-# 3. DEPLOY
+# 4. DEPLOY
 # ---------------------------------------------------------
 
 # Deploy via Podman (Rootless)
@@ -58,7 +69,7 @@ clean:
     podman rm bastion || true
 
 # ---------------------------------------------------------
-# 4. RELEASE
+# 5. RELEASE
 # ---------------------------------------------------------
 
 # Tag and Sign the release
