@@ -1,6 +1,9 @@
 # IndieWeb2 CURPS policy — v0.1 strict
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+# SPDX-License-Identifier: Apache-2.0
 
 let schema = import "./schema.ncl"
+let webmention = import "./webmention.ncl"
 
 let policy = schema.Policy {
   version = "0.1.0",
@@ -58,6 +61,25 @@ let policy = schema.Policy {
       methods = ["POST"],
       guards = ["mtls", "policy-gate"],
     },
+    # IndieWeb protocol routes
+    {
+      path = "/webmention",
+      plane = "data",
+      methods = ["POST"],
+      guards = ["webmention-rate-limit", "waf", "policy-gate"],
+    },
+    {
+      path = "/webmention.php",
+      plane = "data",
+      methods = ["POST"],
+      guards = ["webmention-rate-limit", "waf", "policy-gate"],
+    },
+    {
+      path = "/.well-known/webmention",
+      plane = "data",
+      methods = ["POST"],
+      guards = ["webmention-rate-limit", "waf", "policy-gate"],
+    },
   ],
 
   consent_bindings = [
@@ -76,4 +98,7 @@ let policy = schema.Policy {
   },
 }
 
-export policy
+export {
+  policy,
+  webmention_policy = webmention.webmention_policy,
+}

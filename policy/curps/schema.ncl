@@ -48,6 +48,22 @@ contract Constraints = {
   max_rate_rpm      | Num
 }
 
+# Webmention-specific route constraints for ingress hardening
+contract WebmentionConstraints = {
+  max_rate_rpm            | Num
+  max_rate_per_source     | Num
+  require_content_type    | Array(String)
+  require_source_target   | Bool
+  block_self_ping         | Bool
+  cooldown_on_burst_ms    | Num
+}
+
+contract WebmentionPolicy = {
+  routes      | Array(String)
+  constraints | WebmentionConstraints
+  enabled     | Bool
+}
+
 contract Policy = {
   version          | String
   capabilities     | CapabilitySet
@@ -66,5 +82,7 @@ export {
   ConsentDefaults,
   ConsentBinding,
   Constraints,
+  WebmentionConstraints,
+  WebmentionPolicy,
   Policy
 }
