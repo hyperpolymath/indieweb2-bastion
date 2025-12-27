@@ -145,6 +145,23 @@ impl WebmentionValidator {
             }
         };
 
+        // Validate URL schemes (only http/https allowed) and require valid host
+        if !matches!(source_url.scheme(), "http" | "https") || source_url.host_str().is_none() {
+            debug!(source = %source, "Invalid source URL (bad scheme or no host)");
+            return ValidationResult::Invalid(ValidationError::InvalidUrl {
+                param: "source",
+                url: source.to_string(),
+            });
+        }
+
+        if !matches!(target_url.scheme(), "http" | "https") || target_url.host_str().is_none() {
+            debug!(target = %target, "Invalid target URL (bad scheme or no host)");
+            return ValidationResult::Invalid(ValidationError::InvalidUrl {
+                param: "target",
+                url: target.to_string(),
+            });
+        }
+
         // Check for self-ping
         if self.config.block_self_ping {
             if let (Some(source_host), Some(target_host)) =
@@ -310,5 +327,38 @@ mod tests {
         assert_eq!(extract_registrable_domain("blog.example.com"), "example.com");
         assert_eq!(extract_registrable_domain("example.co.uk"), "example.co.uk");
         assert_eq!(extract_registrable_domain("www.example.co.uk"), "example.co.uk");
+    }
+
+    #[test]
+    fn test_malformed_urls_rejected() {
+        let validator = default_validator();
+
+        // FTP scheme should be rejected
+        let result = validator.validate_source_target(
+            Some("ftp://example.com/file"),
+            Some("https://target.com/"),
+        );
+        assert!(!result.is_valid(), "FTP URL should be rejected");
+
+        // Empty host should be rejected (https:// fails to parse)
+        let result = validator.validate_source_target(
+            Some("https://"),
+            Some("https://target.com/"),
+        );
+        assert!(!result.is_valid(), "URL with empty host should be rejected");
+
+        // javascript: scheme should be rejected
+        let result = validator.validate_source_target(
+            Some("javascript:alert(1)"),
+            Some("https://target.com/"),
+        );
+        assert!(!result.is_valid(), "javascript: URL should be rejected");
+
+        // file: scheme should be rejected
+        let result = validator.validate_source_target(
+            Some("file:///etc/passwd"),
+            Some("https://target.com/"),
+        );
+        assert!(!result.is_valid(), "file: URL should be rejected");
     }
 }
