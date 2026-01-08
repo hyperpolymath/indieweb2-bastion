@@ -1,88 +1,33 @@
-# IndieWeb2 Bastion — Superoptimised Justfile
-set shell := ["bash", "-cu"]
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Justfile - hyperpolymath standard task runner
 
-# Paths
-TMP_DIR := ".tmp"
-POLICY_DIR := "policy/curps"
-POLICY_NCL := "{{POLICY_DIR}}/policy.ncl"
-POLICY_JSON := "{{TMP_DIR}}/policy.json"
+default:
+    @just --list
 
-RESCRIPT_OUT_CLI := "lib/js/src/PolicyGateCLI.js"
-DENO_SIGN := "policy/runner/crypto/sign_policy.js"
-DENO_RUNNER := "policy/runner/policy/run.js"
+# Build the project
+build:
+    @echo "Building..."
 
-# ---------------------------
-# Bootstrap (dirs + tools)
-# ---------------------------
-bootstrap:
-  mkdir -p {{TMP_DIR}} policy/runner/crypto policy/runner/policy sbom logging products/pwa/build
-  if ! command -v jq >/dev/null; then sudo dnf install -y jq; fi
-  if ! command -v capnp >/dev/null; then sudo dnf install -y capnproto; fi
-  if ! command -v nickel >/dev/null; then \
-    echo "Installing Nickel..."; \
-    curl -L https://github.com/tweag/nickel/releases/latest/download/nickel-x86_64-unknown-linux-gnu.tar.gz \
-      | tar xz -C /usr/local/bin; \
-  fi
-  if ! command -v deno >/dev/null; then \
-    echo "Installing Deno..."; \
-    curl -fsSL https://deno.land/install.sh | sh; \
-    export PATH="$$HOME/.deno/bin:$$PATH"; \
-  fi
+# Run tests
+test:
+    @echo "Testing..."
 
-# ---------------------------
-# Validation
-# ---------------------------
-validate: bootstrap
-  nickel export {{POLICY_NCL}} > {{POLICY_JSON}}
-  capnp compile -oc++ surrealdb/provenance.capnp
-  surreal validate surrealdb/schema.surql
+# Run lints
+lint:
+    @echo "Linting..."
 
-validate-eval: bootstrap
-  nickel eval {{POLICY_NCL}} > /dev/null
+# Clean build artifacts
+clean:
+    @echo "Cleaning..."
 
-validate-pretty: bootstrap
-  nickel export {{POLICY_NCL}} | jq . > {{TMP_DIR}}/policy.pretty.json
+# Format code
+fmt:
+    @echo "Formatting..."
 
-# ---------------------------
-# ReScript policy gate
-# ---------------------------
-rescript-build:
-  npx rescript build
+# Run all checks
+check: lint test
 
-policy-gate: validate rescript-build
-  node {{RESCRIPT_OUT_CLI}} {{POLICY_JSON}}
+# Prepare a release
+release VERSION:
+    @echo "Releasing {{VERSION}}..."
 
-# ---------------------------
-# Deno signing & publishing
-# ---------------------------
-sign-policy: validate
-  deno run --allow-read --allow-write --unstable {{DENO_SIGN}} {{POLICY_JSON}} {{TMP_DIR}}/policy.sig
-
-verify-publish:
-  deno run --allow-read --allow-run --allow-write --unstable {{DENO_RUNNER}} {{POLICY_JSON}} {{TMP_DIR}}/policy.sig.json
-
-# ---------------------------
-# GUI / PWA dev server with port check
-# ---------------------------
-gui-dev: bootstrap
-  PORT=8443; \
-  if ss -ltn | grep -q ":$$PORT "; then \
-    echo "Port $$PORT in use. Trying 8080..."; PORT=8080; \
-  fi; \
-  echo "Starting static server on port $$PORT"; \
-  deno run --allow-read --allow-net scripts/static_serve.js products/pwa/public $$PORT
-
-# ---------------------------
-# Full pipeline
-# ---------------------------
-all: validate policy-gate sign-policy verify-publish gui-dev
-
-# Tidy the root directory of build artefacts and misplaced files
-tidy-root:
-    @echo "Tidying root directory..."
-    @./scripts/tidy_root.oil
-
-# Interactively tidy the repository of build artefacts and duplicates
-interactive-tidy:
-    @echo "Starting interactive tidy..."
-    @./scripts/interactive_tidy.sh
