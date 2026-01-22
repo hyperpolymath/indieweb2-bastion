@@ -11,7 +11,7 @@
        (repo . "indieweb2-bastion")))
     (current-position
       ((phase . "Active development - Consent portal")
-       (overall-completion . 85)
+       (overall-completion . 90)
        (components
          ((rust-core . ((status . "working") (completion . 75)
                         (notes . "12 Rust source files")))
@@ -23,12 +23,16 @@
           (provenance-graph . ((status . "working") (completion . 65)
                                (notes . "SurrealDB integration")))
           (dns-api . ((status . "working") (completion . 100)
-                      (notes . "GraphQL DNS API with Rust + async-graphql, full RR coverage, DNSSEC, blockchain provenance")))))
+                      (notes . "GraphQL DNS API with Rust + async-graphql, full RR coverage, DNSSEC, blockchain provenance")))
+          (odns . ((status . "working") (completion . 100)
+                   (notes . "oDNS proxy + resolver with Go, HPKE encryption, privacy-preserving DNS")))))
        (working-features . (
          "Consent-aware ingress portal"
-         "IPv6-native oblivious DNS"
-         "GraphQL DNS APIs"
+         "IPv6-native oblivious DNS (oDNS proxy + resolver)"
+         "GraphQL DNS APIs (full RR coverage + DNSSEC)"
+         "HPKE encryption for DNS privacy"
          "SurrealDB provenance graphs"
+         "Blockchain DNS anchoring (Ethereum/Polygon)"
          "Rust core (12 files)"
          "ReScript frontend (4 files)"
          "JavaScript UI (12 files)"))))
@@ -43,7 +47,7 @@
     (blockers-and-issues
       ((critical . ())
        (high . ())
-       (medium . ("WordPress integration pending" "oDNS proxy/resolver implementation"))
+       (medium . ("WordPress integration pending" "Nickel config integration"))
        (low . ("Documentation gaps"))))
     (critical-next-actions
       ((immediate . ("Test GraphQL DNS API" "Deploy to testnet"))
