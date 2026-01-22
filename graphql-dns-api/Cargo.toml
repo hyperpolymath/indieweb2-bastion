@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "graphql-dns-api"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["Jonathan D.A. Jewell <jonathan@hyperpolymath.org>"]
+description = "GraphQL DNS API with blockchain provenance for indieweb2-bastion"
+license = "Apache-2.0"
+repository = "https://github.com/hyperpolymath/indieweb2-bastion"
+
+[dependencies]
+# GraphQL
+async-graphql = { version = "7.0", features = ["chrono", "uuid"] }
+async-graphql-axum = "7.0"
+
+# Web framework
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1.35", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Database
+surrealdb = { version = "1.5", features = ["kv-rocksdb"] }
+
+# Blockchain
+ethers = { version = "2.0", features = ["rustls", "abigen"] }
+
+# DNS/DNSSEC
+trust-dns-client = "0.24"
+trust-dns-server = "0.24"
+trust-dns-proto = "0.24"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Utilities
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Configuration
+dotenvy = "0.15"
+config = "0.14"
+
+# Cryptography (for DNSSEC)
+ring = "0.17"
+base64 = "0.22"
+hex = "0.4"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

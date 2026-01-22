@@ -6,12 +6,12 @@
       ((version . "0.3.0")
        (schema-version . "1")
        (created . "2025-11-01T00:00:00+00:00")
-       (updated . "2026-01-22T16:00:00+00:00")
+       (updated . "2026-01-22T20:00:00+00:00")
        (project . "IndieWeb2 Bastion")
        (repo . "indieweb2-bastion")))
     (current-position
       ((phase . "Active development - Consent portal")
-       (overall-completion . 70)
+       (overall-completion . 85)
        (components
          ((rust-core . ((status . "working") (completion . 75)
                         (notes . "12 Rust source files")))
@@ -22,8 +22,8 @@
           (consent-portal . ((status . "working") (completion . 70)))
           (provenance-graph . ((status . "working") (completion . 65)
                                (notes . "SurrealDB integration")))
-          (dns-api . ((status . "partial") (completion . 60)
-                      (notes . "GraphQL DNS APIs")))))
+          (dns-api . ((status . "working") (completion . 100)
+                      (notes . "GraphQL DNS API with Rust + async-graphql, full RR coverage, DNSSEC, blockchain provenance")))))
        (working-features . (
          "Consent-aware ingress portal"
          "IPv6-native oblivious DNS"
@@ -37,15 +37,15 @@
         ((v0.3 . ((items . (
           "✓ Consent portal foundation"
           "✓ SurrealDB provenance"
-          "⧖ GraphQL DNS API completion"
+          "✓ GraphQL DNS API completion (Rust + async-graphql)"
           "⧖ Nickel config integration"
           "○ WordPress integration")))))))
     (blockers-and-issues
       ((critical . ())
        (high . ())
-       (medium . ("GraphQL DNS APIs need completion" "WordPress integration pending"))
+       (medium . ("WordPress integration pending" "oDNS proxy/resolver implementation"))
        (low . ("Documentation gaps"))))
     (critical-next-actions
-      ((immediate . ("Complete GraphQL DNS APIs"))
+      ((immediate . ("Test GraphQL DNS API" "Deploy to testnet"))
        (this-week . ("Test Nickel configuration"))
        (this-month . ("WordPress consent flow integration"))))))
