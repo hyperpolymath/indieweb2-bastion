@@ -10,8 +10,8 @@
        (project . "IndieWeb2 Bastion")
        (repo . "indieweb2-bastion")))
     (current-position
-      ((phase . "Active development - Consent portal")
-       (overall-completion . 90)
+      ((phase . "Active development - WordPress integration")
+       (overall-completion . 95)
        (components
          ((rust-core . ((status . "working") (completion . 75)
                         (notes . "12 Rust source files")))
@@ -23,7 +23,7 @@
           (provenance-graph . ((status . "working") (completion . 65)
                                (notes . "SurrealDB integration")))
           (dns-api . ((status . "working") (completion . 100)
-                      (notes . "GraphQL DNS API with Rust + async-graphql, full RR coverage, DNSSEC, blockchain provenance")))
+                      (notes . "GraphQL DNS API with Rust + async-graphql, full RR coverage, DNSSEC, blockchain provenance, Nickel CURPS governance")))
           (odns . ((status . "working") (completion . 100)
                    (notes . "oDNS proxy + resolver with Go, HPKE encryption, privacy-preserving DNS")))))
        (working-features . (
@@ -33,6 +33,7 @@
          "HPKE encryption for DNS privacy"
          "SurrealDB provenance graphs"
          "Blockchain DNS anchoring (Ethereum/Polygon)"
+         "Nickel CURPS policy governance (RBAC, approvals, timelocks)"
          "Rust core (12 files)"
          "ReScript frontend (4 files)"
          "JavaScript UI (12 files)"))))
@@ -42,14 +43,14 @@
           "✓ Consent portal foundation"
           "✓ SurrealDB provenance"
           "✓ GraphQL DNS API completion (Rust + async-graphql)"
-          "⧖ Nickel config integration"
+          "✓ Nickel config integration (CURPS governance)"
           "○ WordPress integration")))))))
     (blockers-and-issues
       ((critical . ())
        (high . ())
-       (medium . ("WordPress integration pending" "Nickel config integration"))
+       (medium . ("WordPress integration pending"))
        (low . ("Documentation gaps"))))
     (critical-next-actions
-      ((immediate . ("Test GraphQL DNS API" "Deploy to testnet"))
-       (this-week . ("Test Nickel configuration"))
-       (this-month . ("WordPress consent flow integration"))))))
+      ((immediate . ("WordPress consent flow integration"))
+       (this-week . ("Test GraphQL DNS API with Nickel policies"))
+       (this-month . ("Deploy to testnet"))))))

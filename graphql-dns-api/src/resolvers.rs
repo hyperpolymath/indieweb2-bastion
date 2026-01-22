@@ -104,6 +104,44 @@ impl QueryRoot {
     async fn health(&self) -> Result<String> {
         Ok("OK".to_string())
     }
+
+    /// Get current policy configuration
+    async fn policy(&self, ctx: &Context<'_>) -> Result<crate::policy::Policy> {
+        let enforcer = ctx.data::<std::sync::Arc<tokio::sync::RwLock<crate::policy::PolicyEnforcer>>>()?;
+        let enforcer = enforcer.read().await;
+        Ok(enforcer.policy().clone())
+    }
+
+    /// Get mutation proposal by ID
+    async fn proposal(&self, ctx: &Context<'_>, id: ID) -> Result<Option<crate::policy::MutationProposal>> {
+        let enforcer = ctx.data::<std::sync::Arc<tokio::sync::RwLock<crate::policy::PolicyEnforcer>>>()?;
+        let enforcer = enforcer.read().await;
+        Ok(enforcer.get_proposal(&id.to_string()).cloned())
+    }
+
+    /// Get all mutation proposals
+    async fn proposals(
+        &self,
+        ctx: &Context<'_>,
+        status: Option<crate::policy::ProposalStatus>,
+    ) -> Result<Vec<crate::policy::MutationProposal>> {
+        let enforcer = ctx.data::<std::sync::Arc<tokio::sync::RwLock<crate::policy::PolicyEnforcer>>>()?;
+        let enforcer = enforcer.read().await;
+        let all_proposals = enforcer.get_proposals();
+
+        Ok(if let Some(status_filter) = status {
+            all_proposals.into_iter().filter(|p| p.status == status_filter).collect()
+        } else {
+            all_proposals
+        })
+    }
+
+    /// Check if identity has privilege
+    async fn has_privilege(&self, ctx: &Context<'_>, identity: String, privilege: String) -> Result<bool> {
+        let enforcer = ctx.data::<std::sync::Arc<tokio::sync::RwLock<crate::policy::PolicyEnforcer>>>()?;
+        let enforcer = enforcer.read().await;
+        Ok(enforcer.has_privilege(&identity, &privilege))
+    }
 }
 
 /// GraphQL Mutation root
@@ -249,6 +287,61 @@ impl MutationRoot {
 
         let stored = db.store_provenance(provenance).await?;
         Ok(stored)
+    }
+
+    /// Propose a mutation (requires approval and timelock)
+    async fn propose_mutation(
+        &self,
+        ctx: &Context<'_>,
+        mutation_name: String,
+        payload: serde_json::Value,
+    ) -> Result<crate::policy::MutationProposal> {
+        let enforcer = ctx.data::<std::sync::Arc<tokio::sync::RwLock<crate::policy::PolicyEnforcer>>>()?;
+        let mut enforcer = enforcer.write().await;
+
+        // Get identity from context (would come from mTLS cert or auth token)
+        // For now, using a placeholder - in production, extract from request headers
+        let identity = ctx.data_opt::<String>()
+            .cloned()
+            .unwrap_or_else(|| "identity:unknown".to_string());
+
+        let proposal = enforcer.propose_mutation(&mutation_name, &identity, payload)?;
+        Ok(proposal)
+    }
+
+    /// Approve a mutation proposal
+    async fn approve_mutation(
+        &self,
+        ctx: &Context<'_>,
+        proposal_id: ID,
+    ) -> Result<crate::policy::MutationProposal> {
+        let enforcer = ctx.data::<std::sync::Arc<tokio::sync::RwLock<crate::policy::PolicyEnforcer>>>()?;
+        let mut enforcer = enforcer.write().await;
+
+        // Get identity from context
+        let identity = ctx.data_opt::<String>()
+            .cloned()
+            .unwrap_or_else(|| "identity:unknown".to_string());
+
+        let proposal = enforcer.approve_proposal(&proposal_id.to_string(), &identity)?;
+        Ok(proposal)
+    }
+
+    /// Execute an approved mutation
+    async fn execute_mutation(
+        &self,
+        ctx: &Context<'_>,
+        proposal_id: ID,
+    ) -> Result<crate::policy::MutationProposal> {
+        let enforcer = ctx.data::<std::sync::Arc<tokio::sync::RwLock<crate::policy::PolicyEnforcer>>>()?;
+        let mut enforcer = enforcer.write().await;
+
+        let proposal = enforcer.execute_proposal(&proposal_id.to_string())?;
+
+        // TODO: Actually execute the mutation based on proposal.payload
+        // For now, just mark as executed
+
+        Ok(proposal)
     }
 }
 

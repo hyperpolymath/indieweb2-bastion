@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # GraphQL schema for indieweb2-bastion DNS API
 # Full DNS RR coverage with DNSSEC support
+# Nickel CURPS policy integration for governance
 
 """
 DNS record with blockchain provenance
@@ -199,6 +200,18 @@ type Query {
 
   "Health check"
   health: String!
+
+  "Get current policy configuration"
+  policy: Policy!
+
+  "Get mutation proposal by ID"
+  proposal(id: ID!): MutationProposal
+
+  "Get all mutation proposals"
+  proposals(status: ProposalStatus): [MutationProposal!]!
+
+  "Check if identity has privilege"
+  hasPrivilege(identity: String!, privilege: String!): Boolean!
 }
 
 type Mutation {
@@ -219,6 +232,120 @@ type Mutation {
 
   "Anchor record hash to blockchain"
   anchorToBlockchain(recordId: ID!, network: String!): BlockchainProvenance!
+
+  "Propose a mutation (requires approval and timelock)"
+  proposeMutation(mutationName: String!, payload: JSON!): MutationProposal!
+
+  "Approve a mutation proposal"
+  approveMutation(proposalId: ID!): MutationProposal!
+
+  "Execute an approved mutation"
+  executeMutation(proposalId: ID!): MutationProposal!
+}
+
+"""
+Mutation proposal requiring governance approval
+"""
+type MutationProposal {
+  "Unique proposal identifier"
+  id: ID!
+
+  "Name of the mutation being proposed"
+  mutationName: String!
+
+  "Identity that proposed the mutation"
+  proposer: String!
+
+  "Timestamp when proposed (Unix seconds)"
+  proposedAt: Int!
+
+  "Timestamp when timelock expires (Unix seconds)"
+  timelockUntil: Int!
+
+  "Identities that have approved"
+  approvals: [String!]!
+
+  "Number of approvals required"
+  requiredApprovals: Int!
+
+  "Current proposal status"
+  status: ProposalStatus!
+
+  "Mutation payload (JSON)"
+  payload: JSON!
+}
+
+"""
+Status of a mutation proposal
+"""
+enum ProposalStatus {
+  PENDING
+  TIMELOCK_ACTIVE
+  APPROVED
+  REJECTED
+  EXECUTED
+}
+
+"""
+CURPS policy loaded from Nickel
+"""
+type Policy {
+  "Policy version"
+  version: String!
+
+  "Mutation policies with approval requirements"
+  mutations: [MutationPolicy!]!
+
+  "Roles with privileges"
+  roles: [Role!]!
+
+  "Policy constraints"
+  constraints: PolicyConstraints!
+}
+
+"""
+Mutation policy with governance rules
+"""
+type MutationPolicy {
+  "Mutation name"
+  name: String!
+
+  "Human-readable description"
+  description: String!
+
+  "Number of approvals required"
+  approvals: Int!
+
+  "Timelock duration in hours"
+  timelockHours: Int!
+}
+
+"""
+Role with members and privileges
+"""
+type Role {
+  "Role name"
+  name: String!
+
+  "Identity members of this role"
+  members: [String!]!
+
+  "Privileges granted to this role"
+  privileges: [String!]!
+}
+
+"""
+Policy constraints
+"""
+type PolicyConstraints {
+  "Require mTLS for all connections"
+  requireMtls: Boolean!
+
+  "Log all mutation attempts"
+  logAllMutations: Boolean!
+
+  "Maximum requests per minute"
+  maxRateRpm: Int!
 }
 
 schema {
