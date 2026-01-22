@@ -156,6 +156,15 @@ impl MutationRoot {
         input: DNSRecordInput,
     ) -> Result<DNSRecord> {
         let db = ctx.data::<Database>()?;
+        let consent = ctx.data::<std::sync::Arc<crate::consent::ConsentClient>>()?;
+
+        // Get identity from context (would come from mTLS cert or auth token)
+        let identity = ctx.data_opt::<String>()
+            .cloned()
+            .unwrap_or_else(|| "identity:unknown".to_string());
+
+        // Check DNS operations consent
+        crate::consent::require_dns_consent(consent, &identity).await?;
 
         // Validate record
         validate_dns_record(&input)?;

@@ -21,6 +21,7 @@ use tower_http::cors::CorsLayer;
 use tracing::{info, Level};
 
 mod blockchain;
+mod consent;
 mod db;
 mod dnssec;
 mod error;
@@ -30,6 +31,7 @@ mod resolvers;
 mod schema;
 
 use crate::{
+    consent::ConsentClient,
     db::Database,
     policy::PolicyEnforcer,
     resolvers::{MutationRoot, QueryRoot},
@@ -44,6 +46,7 @@ use tokio::sync::RwLock;
 pub struct AppState {
     pub db: Database,
     pub policy: Arc<RwLock<PolicyEnforcer>>,
+    pub consent: Arc<ConsentClient>,
 }
 
 /// GraphQL handler
@@ -54,6 +57,7 @@ async fn graphql_handler(
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(state.db)
         .data(state.policy)
+        .data(state.consent)
         .finish();
 
     schema.execute(req.into_inner()).await.into()
@@ -116,10 +120,23 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    // Initialize consent client
+    let consent_api_url = std::env::var("CONSENT_API_URL")
+        .unwrap_or_else(|_| "http://localhost:8082".to_string());
+    let consent_client = Arc::new(ConsentClient::new(consent_api_url.clone()));
+
+    // Test consent API connection
+    match consent_client.health_check().await {
+        Ok(true) => info!("✓ Connected to consent API at {}", consent_api_url),
+        Ok(false) => tracing::warn!("Consent API health check failed"),
+        Err(e) => tracing::warn!("Could not connect to consent API ({}), consent checks will fail", e),
+    }
+
     // Create application state
     let state = AppState {
         db,
         policy: policy_enforcer,
+        consent: consent_client,
     };
 
     // Build router
