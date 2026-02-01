@@ -23,7 +23,7 @@ toc::[]
 
 [source,solidity]
 ----
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MPL-2.0-or-later
 pragma solidity ^0.8.20;
 
 /// @title Identity Registry
