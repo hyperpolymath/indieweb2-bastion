@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MPL-2.0-or-later
 [package]
 name = "graphql-dns-api"
 version = "0.1.0"
