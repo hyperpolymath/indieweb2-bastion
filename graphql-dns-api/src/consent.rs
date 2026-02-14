@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 // Consent checking for GraphQL DNS API
 //
 // Integrates with IndieWeb2 Bastion consent API to enforce

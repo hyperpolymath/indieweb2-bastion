@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 module github.com/hyperpolymath/indieweb2-bastion/odns-proxy
 
 go 1.24.0

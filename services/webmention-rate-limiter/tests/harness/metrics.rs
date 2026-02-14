@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2025 Hyperpolymath
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 
 //! Metrics collection for attack simulation results.
 

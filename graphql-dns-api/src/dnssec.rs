@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 //! DNSSEC key generation and zone signing support
 //!
 //! Implements:
@@ -8,6 +8,7 @@
 //! - RRSIG generation (placeholder - full implementation requires trust-dns-server)
 
 use crate::error::{AppError, Result};
+use base64::Engine as _;
 use ring::signature::{self, KeyPair};
 
 /// DNSSEC key manager
@@ -32,7 +33,7 @@ impl DNSSECManager {
         let ksk_pair = signature::Ed25519KeyPair::from_pkcs8(ksk_pkcs8.as_ref())
             .map_err(|e| AppError::DNSSEC(format!("Failed to parse KSK: {:?}", e)))?;
 
-        let ksk_public = base64::encode(ksk_pair.public_key().as_ref());
+        let ksk_public = base64::engine::general_purpose::STANDARD.encode(ksk_pair.public_key().as_ref());
 
         // Generate ZSK (Zone Signing Key)
         let zsk_pkcs8 = signature::Ed25519KeyPair::generate_pkcs8(&ring::rand::SystemRandom::new())
@@ -41,7 +42,7 @@ impl DNSSECManager {
         let zsk_pair = signature::Ed25519KeyPair::from_pkcs8(zsk_pkcs8.as_ref())
             .map_err(|e| AppError::DNSSEC(format!("Failed to parse ZSK: {:?}", e)))?;
 
-        let zsk_public = base64::encode(zsk_pair.public_key().as_ref());
+        let zsk_public = base64::engine::general_purpose::STANDARD.encode(zsk_pair.public_key().as_ref());
 
         // Generate DS record (Delegation Signer for parent zone)
         // Format: <key tag> <algorithm> <digest type> <digest>
@@ -89,27 +90,33 @@ impl DNSSECManager {
         u16::from_be_bytes([bytes[0], bytes[1]])
     }
 
-    /// Sign a DNS record (RRSIG generation)
+    /// Sign a DNS record using Ed25519 (interim — target is Ed448+Dilithium5 per CRYPTO-POLICY.adoc CPR-005)
     ///
-    /// This is a placeholder - full implementation would use trust-dns-server
-    /// to generate proper RRSIG records according to RFC 4034.
-    pub fn sign_record(&self, _record_data: &str, _zsk_private: &[u8]) -> Result<String> {
-        // Placeholder RRSIG
-        // Format: <type> <algorithm> <labels> <original TTL> <expiration> <inception> <key tag> <signer> <signature>
+    /// Signs record data with the provided ZSK private key (PKCS#8 DER).
+    /// Returns base64-encoded signature.
+    pub fn sign_record(&self, record_data: &str, zsk_private: &[u8]) -> Result<String> {
+        let key_pair = signature::Ed25519KeyPair::from_pkcs8(zsk_private)
+            .map_err(|e| AppError::DNSSEC(format!("Invalid ZSK private key: {:?}", e)))?;
 
-        // In production, this would:
-        // 1. Canonical form the RRset
-        // 2. Create RRSIG RDATA
-        // 3. Sign with ZSK private key
-        // 4. Base64 encode signature
-
-        Ok("RRSIG_PLACEHOLDER".to_string())
+        let sig = key_pair.sign(record_data.as_bytes());
+        Ok(base64::engine::general_purpose::STANDARD.encode(sig.as_ref()))
     }
 
-    /// Verify DNSSEC signature
-    pub fn verify_signature(&self, _record_data: &str, _rrsig: &str, _public_key: &[u8]) -> Result<bool> {
-        // Placeholder - would verify RRSIG using public key
-        Ok(true)
+    /// Verify DNSSEC Ed25519 signature (interim — target is Ed448+Dilithium5 per CRYPTO-POLICY.adoc CPR-005)
+    pub fn verify_signature(&self, record_data: &str, rrsig_b64: &str, public_key: &[u8]) -> Result<bool> {
+        let sig_bytes = base64::engine::general_purpose::STANDARD
+            .decode(rrsig_b64)
+            .map_err(|e| AppError::DNSSEC(format!("Invalid base64 signature: {:?}", e)))?;
+
+        let peer_public_key = signature::UnparsedPublicKey::new(
+            &signature::ED25519,
+            public_key,
+        );
+
+        match peer_public_key.verify(record_data.as_bytes(), &sig_bytes) {
+            Ok(()) => Ok(true),
+            Err(_) => Ok(false),
+        }
     }
 }
 

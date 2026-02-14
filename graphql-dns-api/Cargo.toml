@@ -1,12 +1,12 @@
-# SPDX-License-Identifier: MPL-2.0-or-later
+# SPDX-License-Identifier: PMPL-1.0-or-later
 [package]
 name = "graphql-dns-api"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
-authors = ["Jonathan D.A. Jewell <jonathan@hyperpolymath.org>"]
+authors = ["Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"]
 description = "GraphQL DNS API with blockchain provenance for indieweb2-bastion"
-license = "Apache-2.0"
+license = "PMPL-1.0-or-later"
 repository = "https://github.com/hyperpolymath/indieweb2-bastion"
 
 [dependencies]
@@ -26,10 +26,10 @@ surrealdb = { version = "1.5", features = ["kv-rocksdb"] }
 # Blockchain
 ethers = { version = "2.0", features = ["rustls", "abigen"] }
 
-# DNS/DNSSEC
-trust-dns-client = "0.24"
-trust-dns-server = "0.24"
-trust-dns-proto = "0.24"
+# DNS/DNSSEC (trust-dns renamed to hickory-dns)
+hickory-client = "0.24"
+hickory-server = { version = "0.24", features = ["dns-over-rustls"] }
+hickory-proto = "0.24"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -49,10 +49,18 @@ urlencoding = "2.1"
 dotenvy = "0.15"
 config = "0.14"
 
-# Cryptography (for DNSSEC)
-ring = "0.17"
+# Cryptography — per CRYPTO-POLICY.adoc
+blake3 = "1.5"                   # Database hashing (BLAKE3-256) — CPR-009
+sha3 = "0.10"                    # SHAKE3-512 (FIPS 202) — CPR-002
+argon2 = "0.5"                   # Password hashing (Argon2id) — CPR-001
+chacha20poly1305 = "0.10"        # XChaCha20-Poly1305 symmetric — CPR-006
+hkdf = "0.12"                    # HKDF-SHAKE512 key derivation — CPR-007
+rand = "0.8"                     # RNG framework — CPR-008
+rand_chacha = "0.3"              # ChaCha20-DRBG — CPR-008
+ring = "0.17"                    # Ed25519 (interim, DNSSEC compat — deprecated per CPR-005)
 base64 = "0.22"
 hex = "0.4"
+http = "1.0"                     # For CORS header types
 
 [dev-dependencies]
 tokio-test = "0.4"

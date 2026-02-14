@@ -42,26 +42,36 @@ Multi-chain smart contract deployment pipelines are in place for Ethereum, Polyg
 
 **Requirement:** Ed448 or ML-DSA hybrid signatures (Pillar 1, Section 2.1.1)
 
-**Status:** WAIVED until 2026-01-01
+**Status:** EXPIRED (was 2026-01-01) — Crypto policy now defined
 
 **Justification:**
 
-Currently using Ed25519 signatures for repository commits. Blockchain-specific considerations:
+Previously using Ed25519 signatures for repository commits. Blockchain-specific considerations:
 
 * Smart contracts use blockchain-native signature schemes (ECDSA for Ethereum, EdDSA for ICP)
 * Post-quantum blockchain migration is ecosystem-level decision, not project-level
 * Repository signatures can upgrade independently of on-chain cryptography
 
-**Current State:** Ed25519 for git commits, blockchain-native signatures for smart contracts
+**Current State:** Ed25519 for git commits (deprecated per `CRYPTO-POLICY.adoc`). Full post-quantum + classical hybrid policy defined.
 
-**Remediation Plan:**
+**Crypto Policy Reference:** `CRYPTO-POLICY.adoc` (CPR-003, CPR-004, CPR-005)
 
-* 2025-06: Upgrade git commit signing to Ed448/ML-DSA hybrid
-* Monitor blockchain ecosystems for post-quantum upgrades
-* Document post-quantum migration strategy per chain
+**Target algorithms:**
+
+* **Signatures:** Ed448 + Dilithium5-AES hybrid (ML-DSA-87, FIPS 204)
+* **Key exchange:** Kyber-1024 (ML-KEM-1024, FIPS 203)
+* **Fallback:** SPHINCS+ (SLH-DSA, FIPS 205)
+
+**Remediation Plan (updated 2026-02-14):**
+
+* 2026-03: BLAKE3 + SHAKE3-512 hashing migration (in progress)
+* 2026-04: XChaCha20-Poly1305 symmetric encryption
+* 2026-06: Ed448+Dilithium5 hybrid signatures + Kyber-1024 KEM
+* 2026-06: oDNS Rust rewrite with PQ crypto (ADR-0003)
 
 **Signed By:** Security team
-**Expiry:** 2026-01-01
+**Original Expiry:** 2026-01-01
+**Waiver Status:** EXPIRED — replaced by CRYPTO-POLICY.adoc migration timeline
 
 ---
 
@@ -190,7 +200,7 @@ Smart contract deployments have **inherent irreversibility** on blockchain:
 
 |2025-002
 |Post-Quantum Signatures
-|Active
+|EXPIRED (policy defined)
 |2026-01-01
 
 |2025-003
@@ -251,4 +261,4 @@ This differentiation will be clearly documented in REVERSIBILITY.adoc and ARCHIT
 
 _This document complies with Rhodium Standard 0.5, Pillar 1 (Audit-Grade), Section 2.1.6 (Documented Waivers), with blockchain-specific adaptations._
 
-_Last Updated: 2025-01-21_
+_Last Updated: 2026-02-14_

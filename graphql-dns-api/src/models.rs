@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 //! Data models for DNS records and blockchain provenance
 
 use async_graphql::{Enum, InputObject, Object, SimpleObject, ID};
@@ -96,15 +96,14 @@ impl DNSRecord {
         }
     }
 
-    /// Calculate content hash for blockchain anchoring
+    /// Calculate content hash for blockchain anchoring (BLAKE3 per CRYPTO-POLICY.adoc CPR-009)
     pub fn content_hash(&self) -> String {
-        use ring::digest;
         let content = format!(
             "{}:{}:{}:{}",
             self.name, self.record_type as u16, self.ttl, self.value
         );
-        let digest = digest::digest(&digest::SHA256, content.as_bytes());
-        hex::encode(digest.as_ref())
+        let hash = blake3::hash(content.as_bytes());
+        hex::encode(hash.as_bytes())
     }
 }
 

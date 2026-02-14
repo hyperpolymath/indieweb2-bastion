@@ -4,7 +4,7 @@
   "rhodium_version": "0.5",
   "compliance_level": "rhodium-silver",
   "target_level": "rhodium-gold",
-  "last_updated": "2025-01-21T00:00:00Z",
+  "last_updated": "2026-02-14T00:00:00Z",
   "pillars": {
     "audit_grade": {
       "level": "silver",
@@ -12,8 +12,12 @@
       "requirements": {
         "commit_signing": {
           "status": "partial",
-          "details": "Ed25519 for git, blockchain-native for contracts",
+          "details": "Ed25519 (deprecated per CRYPTO-POLICY.adoc); target Ed448+Dilithium5 hybrid",
           "waiver": "Waiver-2025-002"
+        },
+        "crypto_policy": {
+          "status": "defined",
+          "details": "CRYPTO-POLICY.adoc defines full PQ+classical hybrid requirements (16 CPRs)"
         },
         "artifact_attestation": {
           "status": "planned",
@@ -123,7 +127,7 @@
       "requirements": {
         "osi_license": {
           "status": "compliant",
-          "details": "MIT + Palimpsest 0.8 dual license"
+          "details": "PMPL-1.0-or-later (Palimpsest License)"
         },
         "code_of_conduct": {
           "status": "partial",
@@ -154,7 +158,7 @@
       "ethereum_polygon": ["Solidity 0.8.x", "Vyper 0.3.x"],
       "internet_computer": ["Motoko 0.10.x"]
     },
-    "frontend": ["ReScript 11.0.1", "Node.js"],
+    "frontend": ["ReScript 11.0.1", "Deno"],
     "build_tools": ["Hardhat", "Foundry", "dfx (ICP)"],
     "chains": ["Ethereum", "Polygon", "Internet Computer"]
   },

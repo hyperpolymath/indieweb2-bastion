@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+//
+// DEPRECATED: Ed25519-only signing is deprecated per CRYPTO-POLICY.adoc (CPR-005).
+// Target replacement: Rust implementation with Ed448+Dilithium5 hybrid signatures.
+// This script remains for interim compatibility until Phase 4 migration (2026-06-01).
+//
 // Deno — Ed25519 sign policy JSON (pure JS)
 // Usage: deno run --allow-read --allow-write --unstable crypto/sign_policy.js policy.json policy.sig
 

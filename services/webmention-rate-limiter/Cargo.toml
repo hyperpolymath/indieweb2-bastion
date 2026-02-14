@@ -1,12 +1,12 @@
-# SPDX-FileCopyrightText: 2025 Hyperpolymath
-# SPDX-License-Identifier: MPL-2.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+# SPDX-License-Identifier: PMPL-1.0-or-later
 
 [package]
 name = "webmention-rate-limiter"
 version = "0.1.0"
 edition = "2021"
 description = "Webmention ingress rate limiter for indieweb2-bastion"
-license = "Apache-2.0"
+license = "PMPL-1.0-or-later"
 repository = "https://github.com/hyperpolymath/indieweb2-bastion"
 
 [dependencies]

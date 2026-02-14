@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 //! GraphQL resolvers for DNS queries and mutations
 
 use async_graphql::{Context, Object, Result, ID};
@@ -158,10 +158,12 @@ impl MutationRoot {
         let db = ctx.data::<Database>()?;
         let consent = ctx.data::<std::sync::Arc<crate::consent::ConsentClient>>()?;
 
-        // Get identity from context (would come from mTLS cert or auth token)
+        // Get identity from context (mTLS cert or auth token) — reject unauthenticated
         let identity = ctx.data_opt::<String>()
             .cloned()
-            .unwrap_or_else(|| "identity:unknown".to_string());
+            .ok_or_else(|| async_graphql::Error::new(
+                "Authentication required: no identity in request context"
+            ))?;
 
         // Check DNS operations consent
         crate::consent::require_dns_consent(consent, &identity).await?;
@@ -308,11 +310,12 @@ impl MutationRoot {
         let enforcer = ctx.data::<std::sync::Arc<tokio::sync::RwLock<crate::policy::PolicyEnforcer>>>()?;
         let mut enforcer = enforcer.write().await;
 
-        // Get identity from context (would come from mTLS cert or auth token)
-        // For now, using a placeholder - in production, extract from request headers
+        // Get identity from context (mTLS cert or auth token) — reject unauthenticated
         let identity = ctx.data_opt::<String>()
             .cloned()
-            .unwrap_or_else(|| "identity:unknown".to_string());
+            .ok_or_else(|| async_graphql::Error::new(
+                "Authentication required: no identity in request context"
+            ))?;
 
         let proposal = enforcer.propose_mutation(&mutation_name, &identity, payload)?;
         Ok(proposal)
@@ -327,10 +330,12 @@ impl MutationRoot {
         let enforcer = ctx.data::<std::sync::Arc<tokio::sync::RwLock<crate::policy::PolicyEnforcer>>>()?;
         let mut enforcer = enforcer.write().await;
 
-        // Get identity from context
+        // Get identity from context (mTLS cert or auth token) — reject unauthenticated
         let identity = ctx.data_opt::<String>()
             .cloned()
-            .unwrap_or_else(|| "identity:unknown".to_string());
+            .ok_or_else(|| async_graphql::Error::new(
+                "Authentication required: no identity in request context"
+            ))?;
 
         let proposal = enforcer.approve_proposal(&proposal_id.to_string(), &identity)?;
         Ok(proposal)

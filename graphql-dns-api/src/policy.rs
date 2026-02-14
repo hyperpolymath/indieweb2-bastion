@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 // Policy enforcement for GraphQL DNS API
 //
 // Loads Nickel CURPS policies and enforces:

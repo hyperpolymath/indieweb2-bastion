@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 //! SurrealDB integration for DNS records and provenance graph
 
 use crate::{
@@ -123,24 +123,39 @@ impl Database {
         limit: i32,
         offset: i32,
     ) -> Result<Vec<DNSRecord>> {
-        let mut query = String::from("SELECT * FROM dns_records");
+        // Build parameterised query to prevent SQL injection
         let mut conditions = Vec::new();
 
+        if name.is_some() {
+            conditions.push("name = $name");
+        }
+
+        if record_type.is_some() {
+            conditions.push("type = $record_type");
+        }
+
+        let query = if conditions.is_empty() {
+            "SELECT * FROM dns_records LIMIT $limit START $offset".to_string()
+        } else {
+            format!(
+                "SELECT * FROM dns_records WHERE {} LIMIT $limit START $offset",
+                conditions.join(" AND ")
+            )
+        };
+
+        let mut db_query = self.db.query(&query)
+            .bind(("limit", limit))
+            .bind(("offset", offset));
+
         if let Some(name) = name {
-            conditions.push(format!("name = '{}'", name));
+            db_query = db_query.bind(("name", name));
         }
 
         if let Some(record_type) = record_type {
-            conditions.push(format!("type = '{:?}'", record_type));
+            db_query = db_query.bind(("record_type", format!("{:?}", record_type)));
         }
 
-        if !conditions.is_empty() {
-            query.push_str(&format!(" WHERE {}", conditions.join(" AND ")));
-        }
-
-        query.push_str(&format!(" LIMIT {} START {}", limit, offset));
-
-        let mut result = self.db.query(&query).await?;
+        let mut result = db_query.await?;
         let records: Vec<DNSRecord> = result.take(0)?;
 
         Ok(records)

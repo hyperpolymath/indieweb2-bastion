@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 // oDNS Resolver - Oblivious DNS Resolver
 //
 // Decrypts HPKE-encrypted DNS queries from proxy,

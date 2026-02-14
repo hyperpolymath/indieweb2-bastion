@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 //! GraphQL DNS API server for indieweb2-bastion
 //!
 //! Features:
@@ -17,7 +17,7 @@ use axum::{
     Router,
 };
 use std::net::SocketAddr;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing::{info, Level};
 
 mod blockchain;
@@ -139,12 +139,23 @@ async fn main() -> anyhow::Result<()> {
         consent: consent_client,
     };
 
-    // Build router
+    // Build router with restrictive CORS per security policy
+    let allowed_origins = std::env::var("ALLOWED_ORIGINS")
+        .unwrap_or_else(|_| "https://localhost".to_string());
+    let origins: Vec<http::HeaderValue> = allowed_origins
+        .split(',')
+        .filter_map(|o| o.trim().parse().ok())
+        .collect();
+    let cors = CorsLayer::new()
+        .allow_origin(AllowOrigin::list(origins))
+        .allow_methods([http::Method::GET, http::Method::POST, http::Method::OPTIONS])
+        .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION]);
+
     let app = Router::new()
         .route("/graphql", post(graphql_handler))
         .route("/graphiql", get(graphiql))
         .route("/health", get(health))
-        .layer(CorsLayer::permissive())
+        .layer(cors)
         .with_state(state);
 
     // Start server

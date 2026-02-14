@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 // Consent API - IndieWeb2 Bastion
 //
 // Receives and manages user consent preferences from WordPress

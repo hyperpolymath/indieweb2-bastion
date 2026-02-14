@@ -64,6 +64,26 @@ contract WebmentionPolicy = {
   enabled     | Bool
 }
 
+contract CryptoAlgorithm = {
+  name     | String,
+  standard | String,
+  status   | [| 'required, 'deprecated, 'terminated |],
+}
+
+contract CryptoPolicy = {
+  password_hashing  | CryptoAlgorithm,
+  general_hashing   | CryptoAlgorithm,
+  pq_signatures     | CryptoAlgorithm,
+  pq_key_exchange   | CryptoAlgorithm,
+  classical_sigs    | CryptoAlgorithm,
+  symmetric         | CryptoAlgorithm,
+  key_derivation    | CryptoAlgorithm,
+  rng               | CryptoAlgorithm,
+  database_hashing  | CryptoAlgorithm,
+  fallback_sig      | CryptoAlgorithm,
+  terminated        | Array CryptoAlgorithm,
+}
+
 contract Policy = {
   version          | String
   capabilities     | CapabilitySet
@@ -72,6 +92,7 @@ contract Policy = {
   routes           | Array(Route)
   consent_bindings | Array(ConsentBinding)
   constraints      | Constraints
+  crypto           | optional CryptoPolicy
 }
 
 export {
@@ -84,5 +105,7 @@ export {
   Constraints,
   WebmentionConstraints,
   WebmentionPolicy,
+  CryptoAlgorithm,
+  CryptoPolicy,
   Policy
 }

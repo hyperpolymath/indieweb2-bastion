@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: PMPL-1.0-or-later
 //! Integration tests for GraphQL DNS API
 
 use graphql_dns_api::{
