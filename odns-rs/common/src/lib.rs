@@ -8,8 +8,10 @@
 //   KDF:       HKDF-SHA3-512 (RFC 5869 + FIPS 202) — CPR-007
 //   Symmetric: XChaCha20-Poly1305 (extended nonce)  — CPR-006
 //   RNG:       ChaCha20-DRBG via OsRng              — CPR-008
+//   Sigs:      Ed448 + Dilithium5 hybrid            — CPR-005
 
 pub mod crypto;
 pub mod protocol;
+pub mod signatures;
 
 pub use crypto::{decrypt_query, encrypt_query, generate_keypair, PublicKey, SecretKey};

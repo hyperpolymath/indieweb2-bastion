@@ -12,7 +12,9 @@ repository.workspace = true
 
 [dependencies]
 pqcrypto-kyber = { workspace = true }
+pqcrypto-dilithium = { workspace = true }
 pqcrypto-traits = { workspace = true }
+ed448-goldilocks-plus = { workspace = true }
 chacha20poly1305 = { workspace = true }
 hkdf = { workspace = true }
 sha3 = { workspace = true }

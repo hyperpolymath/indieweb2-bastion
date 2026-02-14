@@ -1,14 +1,12 @@
 {
-  "name": "policy-gate",
-  "version": "0.1.0",
+  "name": "indieweb2-bastion",
   "sources": [
     { "dir": "src" }
   ],
   "package-specs": {
-    "module": "commonjs",
+    "module": "esmodule",
     "in-source": true
   },
-  "suffix": ".bs.js",
-  "bs-dependencies": [],
-  "reason": { "react-jsx": 3 }
+  "suffix": ".res.mjs",
+  "dependencies": []
 }

@@ -38,8 +38,12 @@ erl_crash.dump
 /Manifest.toml
 
 # ReScript
-/lib/bs/
+/lib/
 /.bsb.lock
+src/*.res.mjs
+
+# Deno
+deno.lock
 
 # Python (SaltStack only)
 __pycache__/

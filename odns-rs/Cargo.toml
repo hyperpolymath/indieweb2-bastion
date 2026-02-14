@@ -26,6 +26,12 @@ thiserror = "2"
 pqcrypto-kyber = "0.8"
 pqcrypto-traits = "0.3"
 
+# Post-quantum signatures (FIPS 204 ML-DSA-87 / Dilithium5)
+pqcrypto-dilithium = "0.5"
+
+# Classical signatures (Ed448-Goldilocks — RFC 8032 Section 5.2.6)
+ed448-goldilocks-plus = "0.16"
+
 # Symmetric encryption (XChaCha20-Poly1305 — CPR-006)
 chacha20poly1305 = "0.10"
 
