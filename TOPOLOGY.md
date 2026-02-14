@@ -1,0 +1,142 @@
+# TOPOLOGY.md - indieweb2-bastion
+
+## System Architecture
+
+```
+                          +---------------------------+
+                          |     indieweb2-bastion      |
+                          |  Multi-chain IndieWeb      |
+                          |  Identity Platform         |
+                          +---------------------------+
+                                      |
+               +----------------------+----------------------+
+               |                      |                      |
+    +----------v----------+ +---------v---------+ +---------v---------+
+    |   graphql-dns-api   | |     odns-rs/      | |   services/       |
+    |   (Rust + Axum)     | |   proxy + resolver| |                   |
+    |   Port 8443         | |   (Rust + Tokio)  | |  consent-api      |
+    |                     | |   Port 853 / 8853 | |  (Deno, port 443) |
+    |  GraphQL endpoint   | |                   | |                   |
+    |  DNSSEC signing     | |  Kyber-1024 KEM   | |  webmention-rate  |
+    |  BLAKE3 hashing     | |  XChaCha20-Poly   | |  -limiter (Rust)  |
+    +----------+----------+ |  HKDF-SHA3-512    | +---------+---------+
+               |            +---------+---------+           |
+               |                      |                     |
+    +----------v----------+ +---------v---------+ +---------v---------+
+    |     SurrealDB       | |   Upstream DNS    | |   Blockchain      |
+    |   (kv-mem / rocksdb)| |   (UDP, IPv6)     | |   Providers       |
+    |                     | |   [2606:4700::]   | |   Ethereum +      |
+    |  dns_records        | +-------------------+ |   Polygon +       |
+    |  dnssec_zones       |                       |   Internet Comp.  |
+    |  blockchain_prov    |                       +-------------------+
+    +---------------------+
+
+              +---------------------------------------------+
+              |              Policy Layer                    |
+              |                                             |
+              |  policy/curps/schema.ncl   (Nickel)         |
+              |  policy/curps/policy.ncl   (crypto policy)  |
+              |  policy/curps/webmention.ncl                |
+              |  .machine_readable/CRYPTO-POLICY.scm        |
+              +---------------------------------------------+
+
+              +---------------------------------------------+
+              |           Container Stack (stapeln)          |
+              |                                             |
+              |  cerro-torre build   Containerfile           |
+              |  cerro-torre sign    .ctp bundles            |
+              |  selur seal          IPC bridge              |
+              |  selur-compose       compose.toml            |
+              |  vordr run           verified runtime        |
+              |  Base: cgr.dev/chainguard/wolfi-base         |
+              +---------------------------------------------+
+
+              +---------------------------------------------+
+              |           Smart Contracts                    |
+              |                                             |
+              |  contracts/          Solidity (Hardhat)      |
+              |  Internet Computer   Motoko canisters        |
+              +---------------------------------------------+
+```
+
+### Data Flow
+
+```
+Client (DoT :853) --> odns-proxy --> [Kyber-1024 encrypt] --> odns-resolver
+                                                                    |
+                                                            [decrypt + resolve]
+                                                                    |
+                                                            Upstream DNS (UDP)
+
+Client (HTTPS :8443) --> graphql-dns-api --> SurrealDB
+                              |
+                        DNSSEC sign (Ed25519 interim)
+                              |
+                        Blockchain anchor (Ethereum/Polygon/IC)
+```
+
+## Completion Dashboard
+
+| Component               | Status       | Progress                   | Pct  |
+|--------------------------|-------------|----------------------------|------|
+| graphql-dns-api (Rust)   | Partial     | `██████░░░░` | 60%  |
+| odns-rs/proxy (Rust)     | Complete    | `██████████` | 100% |
+| odns-rs/resolver (Rust)  | Complete    | `██████████` | 100% |
+| odns-proxy (Go)          | Deprecated  | `██████████` | 100% |
+| odns-resolver (Go)       | Deprecated  | `██████████` | 100% |
+| consent-api (Deno)       | Production  | `████████░░` | 80%  |
+| webmention-limiter       | Partial     | `██████░░░░` | 60%  |
+| policy-gate (ReScript)   | Stub        | `░░░░░░░░░░` | 0%   |
+| crypto-policy (scheme)   | Defined     | `██████████` | 100% |
+| Nickel policy configs    | Complete    | `██████████` | 100% |
+| smart contracts          | Partial     | `████░░░░░░` | 40%  |
+| container (stapeln)      | Complete    | `██████████` | 100% |
+| DNSSEC (Ed25519 interim) | Partial     | `██████░░░░` | 60%  |
+| PQ crypto (Kyber+Dilith) | oDNS only   | `███░░░░░░░` | 30%  |
+| seccomp/SELinux           | Defined     | `████████░░` | 80%  |
+| TOPOLOGY.md              | Complete    | `██████████` | 100% |
+| **Overall**              | **Active**  | `████░░░░░░` | **40%** |
+
+### Legend
+
+- Deprecated = superseded by Rust rewrite, pending removal
+- Partial = functional but missing PQ crypto or full test coverage
+- Stub = not yet implemented
+- Defined = policy/config written, not yet enforced in code
+
+## Key Dependencies
+
+| Dependency           | Version | Purpose                              |
+|----------------------|---------|--------------------------------------|
+| pqcrypto-kyber       | 0.8     | Kyber-1024 / ML-KEM-1024 (FIPS 203) |
+| chacha20poly1305     | 0.10    | XChaCha20-Poly1305 symmetric         |
+| hkdf + sha3          | 0.12    | HKDF-SHA3-512 key derivation         |
+| blake3               | 1.5     | Content hashing (CPR-009)            |
+| hickory-proto        | 0.24    | DNS protocol (replaced trust-dns)    |
+| surrealdb            | 1.5     | Graph DB (kv-mem default)            |
+| async-graphql        | 7.0     | GraphQL framework                    |
+| axum                 | 0.7/0.8 | HTTP framework                       |
+| ethers               | 2.0     | Ethereum/Polygon blockchain          |
+| ring                 | 0.17    | Ed25519 (interim, DNSSEC)            |
+| tokio                | 1.x     | Async runtime                        |
+| rustls               | 0.23    | TLS 1.3 (proxy)                      |
+| nickel               | -       | Policy contracts                     |
+| deno                 | 2.x     | Consent API runtime                  |
+
+### Crypto Algorithm Map (CRYPTO-POLICY.adoc)
+
+| Requirement | Algorithm                  | Status      |
+|-------------|----------------------------|-------------|
+| CPR-001     | Argon2id (512MiB/8it/4ln)  | Dep added   |
+| CPR-002     | SHAKE3-512 (FIPS 202)      | Dep added   |
+| CPR-003     | Dilithium5-AES (ML-DSA-87) | Not wired   |
+| CPR-004     | Kyber-1024 (ML-KEM-1024)   | odns-rs     |
+| CPR-005     | Ed448 + Dilithium5 hybrid  | Not wired   |
+| CPR-006     | XChaCha20-Poly1305         | odns-rs     |
+| CPR-007     | HKDF-SHA3-512              | odns-rs     |
+| CPR-008     | ChaCha20-DRBG              | OsRng used  |
+| CPR-009     | BLAKE3 + SHAKE3-512        | graphql-api |
+| CPR-010     | QUIC + HTTP/3 + IPv6       | Not started |
+| CPR-011     | WCAG 2.3 AAA               | Not started |
+| CPR-012     | SPHINCS+ fallback          | Not started |
+| CPR-013     | Coq/Isabelle verification  | Not started |

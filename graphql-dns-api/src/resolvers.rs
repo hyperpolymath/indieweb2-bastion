@@ -10,7 +10,7 @@ use crate::{
     dnssec::DNSSECManager,
     models::{
         BlockchainProvenance, DNSRecord, DNSRecordInput, DNSRecordType, DNSSECZone, DNSStatistics,
-        RecordTypeCount, ReverseDNSResult,
+        ReverseDNSResult,
     },
 };
 

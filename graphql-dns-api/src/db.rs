@@ -5,11 +5,12 @@ use crate::{
     error::{AppError, Result},
     models::{BlockchainProvenance, DNSRecord, DNSRecordType, DNSSECZone, RecordTypeCount},
 };
-use async_graphql::ID;
 use surrealdb::{
-    engine::local::{Db, RocksDb},
+    engine::local::Db,
     Surreal,
 };
+#[cfg(feature = "rocksdb")]
+use surrealdb::engine::local::RocksDb;
 
 /// Database connection wrapper
 #[derive(Clone)]
@@ -18,12 +19,26 @@ pub struct Database {
 }
 
 impl Database {
-    /// Connect to SurrealDB
+    /// Connect to SurrealDB.
+    ///
+    /// Pass `"memory"` for in-memory storage (default, no C++ deps).
+    /// Pass a file path for RocksDB persistent storage (requires `rocksdb` feature).
     pub async fn connect(path: &str) -> Result<Self> {
         let db = if path == "memory" {
             Surreal::new::<surrealdb::engine::local::Mem>(()).await?
         } else {
-            Surreal::new::<RocksDb>(path).await?
+            #[cfg(feature = "rocksdb")]
+            {
+                Surreal::new::<RocksDb>(path).await?
+            }
+            #[cfg(not(feature = "rocksdb"))]
+            {
+                return Err(AppError::Internal(format!(
+                    "persistent storage path '{}' requires the 'rocksdb' feature — \
+                     rebuild with: cargo build --features rocksdb",
+                    path
+                )));
+            }
         };
 
         // Use namespace and database
@@ -195,13 +210,13 @@ impl Database {
 
     /// Create or update DNSSEC zone
     pub async fn upsert_dnssec_zone(&self, zone: DNSSECZone) -> Result<DNSSECZone> {
-        let created: Option<DNSSECZone> = self
+        let updated: Option<DNSSECZone> = self
             .db
-            .upsert(("dnssec_zones", &zone.zone))
+            .update(("dnssec_zones", &*zone.zone))
             .content(&zone)
             .await?;
 
-        created.ok_or_else(|| AppError::Internal("Failed to upsert zone".to_string()))
+        updated.ok_or_else(|| AppError::Internal("Failed to upsert zone".to_string()))
     }
 
     /// Store blockchain provenance

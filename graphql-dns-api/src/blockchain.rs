@@ -7,7 +7,7 @@
 
 use crate::error::{AppError, Result};
 use ethers::{
-    core::types::{TransactionReceipt, TransactionRequest, U256},
+    core::types::{Transaction, TransactionReceipt, TransactionRequest, TxHash, U256},
     middleware::SignerMiddleware,
     providers::{Http, Middleware, Provider},
     signers::{LocalWallet, Signer},
@@ -118,9 +118,9 @@ impl BlockchainClient {
 
     /// Verify a content hash on the blockchain
     pub async fn verify_hash(&self, tx_hash: &str, expected_hash: &str) -> Result<bool> {
-        let tx = self
+        let tx: Transaction = self
             .provider
-            .get_transaction_by_hash(tx_hash.parse().unwrap())
+            .get_transaction(tx_hash.parse::<TxHash>().unwrap())
             .await
             .map_err(|e| AppError::Blockchain(e.to_string()))?
             .ok_or_else(|| AppError::Blockchain("Transaction not found".to_string()))?;
@@ -143,7 +143,7 @@ impl BlockchainClient {
     pub async fn get_receipt(&self, tx_hash: &str) -> Result<TransactionReceipt> {
         let receipt = self
             .provider
-            .get_transaction_receipt(tx_hash.parse().unwrap())
+            .get_transaction_receipt(tx_hash.parse::<TxHash>().unwrap())
             .await
             .map_err(|e| AppError::Blockchain(e.to_string()))?
             .ok_or_else(|| AppError::Blockchain("Transaction receipt not found".to_string()))?;

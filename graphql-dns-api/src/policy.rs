@@ -9,7 +9,7 @@
 // - Rate limiting
 
 use anyhow::{anyhow, Result};
-use async_graphql::{Enum, InputObject, Object, SimpleObject, Scalar, ScalarType};
+use async_graphql::{Enum, SimpleObject, Scalar, ScalarType};
 use async_graphql::Value as GraphQLValue;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -52,7 +52,10 @@ fn json_to_graphql(value: JsonValue) -> GraphQLValue {
             if let Some(i) = n.as_i64() {
                 GraphQLValue::Number(i.into())
             } else if let Some(f) = n.as_f64() {
-                GraphQLValue::Number(f.into())
+                match async_graphql::Number::from_f64(f) {
+                    Some(num) => GraphQLValue::Number(num),
+                    None => GraphQLValue::Null,
+                }
             } else {
                 GraphQLValue::Null
             }
@@ -157,7 +160,7 @@ pub struct MutationProposal {
     pub payload: JsonValue,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Enum, Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Enum, Copy)]
 pub enum ProposalStatus {
     Pending,
     TimelockActive,
@@ -271,13 +274,21 @@ impl PolicyEnforcer {
         proposal_id: &str,
         approver: &str,
     ) -> Result<MutationProposal> {
+        // Extract needed data from proposal before mutable borrow
+        let mutation_name = {
+            let proposal = self.proposals.get(proposal_id)
+                .ok_or_else(|| anyhow!("Proposal not found: {}", proposal_id))?;
+            proposal.mutation_name.clone()
+        };
+
+        // Check approver has privilege (immutable borrow of self)
+        if !self.has_privilege(approver, &mutation_name) {
+            return Err(anyhow!("Identity {} lacks privilege for {}", approver, mutation_name));
+        }
+
+        // Now take mutable borrow for modifications
         let proposal = self.proposals.get_mut(proposal_id)
             .ok_or_else(|| anyhow!("Proposal not found: {}", proposal_id))?;
-
-        // Check approver has privilege
-        if !self.has_privilege(approver, &proposal.mutation_name) {
-            return Err(anyhow!("Identity {} lacks privilege for {}", approver, proposal.mutation_name));
-        }
 
         // Check not already approved by this identity
         if proposal.approvals.contains(&approver.to_string()) {

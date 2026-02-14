@@ -31,11 +31,5 @@ pub enum AppError {
     Internal(String),
 }
 
-impl From<AppError> for async_graphql::Error {
-    fn from(err: AppError) -> Self {
-        async_graphql::Error::new(err.to_string())
-    }
-}
-
 /// Result type alias
 pub type Result<T> = std::result::Result<T, AppError>;

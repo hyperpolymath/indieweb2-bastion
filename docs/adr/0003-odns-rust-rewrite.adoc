@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
 = ADR-0003: oDNS Go-to-Rust Rewrite with Post-Quantum Cryptography
-:status: Proposed
+:status: Accepted
 :date: 2026-02-14
 :deciders: Jonathan D.A. Jewell
 
 == Status
 
-Proposed
+Accepted — Rust implementation in `odns-rs/` workspace.
 
 == Context
 

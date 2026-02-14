@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
 //! Data models for DNS records and blockchain provenance
 
-use async_graphql::{Enum, InputObject, Object, SimpleObject, ID};
+use async_graphql::{Enum, InputObject, SimpleObject, ID};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -177,7 +177,7 @@ pub struct DNSStatistics {
 }
 
 /// Record count by type
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, Serialize, Deserialize, SimpleObject)]
 pub struct RecordTypeCount {
     #[graphql(name = "type")]
     pub record_type: DNSRecordType,

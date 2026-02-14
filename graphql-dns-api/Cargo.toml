@@ -15,13 +15,13 @@ async-graphql = { version = "7.0", features = ["chrono", "uuid"] }
 async-graphql-axum = "7.0"
 
 # Web framework
-axum = { version = "0.7", features = ["macros"] }
+axum = { version = "0.8", features = ["macros"] }
 tokio = { version = "1.35", features = ["full"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["cors", "trace"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
 
-# Database
-surrealdb = { version = "1.5", features = ["kv-rocksdb"] }
+# Database — kv-mem default (pure Rust); enable "rocksdb" feature for persistent storage
+surrealdb = { version = "1.5", features = ["kv-mem"] }
 
 # Blockchain
 ethers = { version = "2.0", features = ["rustls", "abigen"] }
@@ -61,6 +61,10 @@ ring = "0.17"                    # Ed25519 (interim, DNSSEC compat — deprecate
 base64 = "0.22"
 hex = "0.4"
 http = "1.0"                     # For CORS header types
+
+[features]
+default = []
+rocksdb = ["surrealdb/kv-rocksdb"]
 
 [dev-dependencies]
 tokio-test = "0.4"

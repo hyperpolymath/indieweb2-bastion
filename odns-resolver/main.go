@@ -1,4 +1,11 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
+//
+// DEPRECATED: This Go implementation is superseded by the Rust rewrite in odns-rs/resolver/.
+// Go is a banned language per hyperpolymath language policy.
+// See docs/adr/0003-odns-rust-rewrite.adoc for migration details.
+// Crypto algorithms (X25519, HKDF-SHA256, ChaCha20-Poly1305) are TERMINATED per CRYPTO-POLICY.adoc.
+// Target: Kyber-1024 + HKDF-SHA3-512 + XChaCha20-Poly1305 (in odns-rs/).
+//
 // oDNS Resolver - Oblivious DNS Resolver
 //
 // Decrypts HPKE-encrypted DNS queries from proxy,

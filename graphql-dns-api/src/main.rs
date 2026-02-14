@@ -35,7 +35,6 @@ use crate::{
     db::Database,
     policy::PolicyEnforcer,
     resolvers::{MutationRoot, QueryRoot},
-    schema::AppSchema,
 };
 
 use std::sync::Arc;
