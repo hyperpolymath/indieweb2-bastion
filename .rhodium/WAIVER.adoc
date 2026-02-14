@@ -62,12 +62,15 @@ Previously using Ed25519 signatures for repository commits. Blockchain-specific 
 * **Key exchange:** Kyber-1024 (ML-KEM-1024, FIPS 203)
 * **Fallback:** SPHINCS+ (SLH-DSA, FIPS 205)
 
-**Remediation Plan (updated 2026-02-14):**
+**Remediation Status (updated 2026-02-14):**
 
-* 2026-03: BLAKE3 + SHAKE3-512 hashing migration (in progress)
-* 2026-04: XChaCha20-Poly1305 symmetric encryption
-* 2026-06: Ed448+Dilithium5 hybrid signatures + Kyber-1024 KEM
-* 2026-06: oDNS Rust rewrite with PQ crypto (ADR-0003)
+* ✅ BLAKE3 content hashing — graphql-dns-api (DONE)
+* ✅ XChaCha20-Poly1305 symmetric — odns-rs/crypto (DONE)
+* ✅ Ed448+Dilithium5 hybrid signatures — odns-rs/signatures + graphql-dns-api DNSSEC (DONE)
+* ✅ Kyber-1024 KEM — odns-rs/crypto (DONE)
+* ✅ SPHINCS+ fallback — odns-rs/sphincs_fallback (DONE)
+* ✅ oDNS Rust rewrite with PQ crypto — ADR-0003 implemented, Go code removed (DONE)
+* ⬜ Consent-api BLAKE3+hybrid signing via Rust WASM (PENDING)
 
 **Signed By:** Security team
 **Original Expiry:** 2026-01-01

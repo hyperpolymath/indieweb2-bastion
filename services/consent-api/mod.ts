@@ -6,6 +6,7 @@
 // and SurrealDB for storage.
 
 import { serve } from "https://deno.land/std@0.218.0/http/server.ts";
+// deno-lint-ignore-file no-explicit-any
 import { Surreal } from "https://deno.land/x/surrealdb@v1.0.0/mod.ts";
 
 // Content integrity hashing (CPR-009: BLAKE3 per CRYPTO-POLICY.adoc)
@@ -92,10 +93,10 @@ async function storeConsent(prefs: ConsentPreferences): Promise<ConsentRecord> {
   const hash = await contentHash(hashInput);
 
   if (existing && existing.length > 0) {
-    // Update existing record
+    // Update existing record (parameterized to prevent injection)
     const record = existing[0];
     const updated = await db.query<ConsentRecord[]>(
-      `UPDATE consent:${record.id} SET
+      `UPDATE type::thing("consent", $recordId) SET
         telemetry = $telemetry,
         indexing = $indexing,
         webmentions = $webmentions,
@@ -106,7 +107,7 @@ async function storeConsent(prefs: ConsentPreferences): Promise<ConsentRecord> {
         contentHash = $contentHash,
         updatedAt = time::now(),
         version = version + 1`,
-      { ...prefs, contentHash: hash }
+      { ...prefs, contentHash: hash, recordId: record.id }
     );
     return updated[0];
   } else {
@@ -262,7 +263,7 @@ async function handler(req: Request): Promise<Response> {
   } catch (error) {
     console.error("Error handling request:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
       { status: 500, headers }
     );
   }

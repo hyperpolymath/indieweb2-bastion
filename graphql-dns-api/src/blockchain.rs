@@ -91,7 +91,7 @@ impl BlockchainClient {
         let tx = TransactionRequest::new()
             .to(client.address()) // Send to self
             .value(U256::zero()) // No ETH transfer
-            .data(hex::decode(&data[2..]).unwrap())
+            .data(hex::decode(&data[2..]).map_err(|e| AppError::Blockchain(format!("Invalid hex data: {}", e)))?)
             .gas_price(gas_price);
 
         // Send transaction

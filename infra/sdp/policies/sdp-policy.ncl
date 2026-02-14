@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
 # CURPS Policy for SDP
 capabilities:
   - mutate_routes: maintainers

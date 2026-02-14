@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
 # Build Configuration for Indieweb2 Bastion
 # Multi-chain smart contract platform: Solidity + Vyper + Motoko + ReScript
 

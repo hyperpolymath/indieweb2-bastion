@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
 # Development Environment Configuration for Indieweb2 Bastion
 # Multi-chain smart contract development settings
 

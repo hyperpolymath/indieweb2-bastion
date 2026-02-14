@@ -191,14 +191,13 @@ impl HybridSignature {
 
 impl HybridKeyPair {
     /// Extract the public key from the keypair.
-    pub fn public_key(&self) -> HybridPublicKey {
+    pub fn public_key(&self) -> Result<HybridPublicKey, SignatureError> {
         let vk_bytes = self.ed448_vk.to_bytes();
-        HybridPublicKey {
-            ed448_vk: VerifyingKey::from_bytes(&vk_bytes)
-                .expect("valid Ed448 verifying key from keypair"),
-            dil5_pk: dilithium5::PublicKey::from_bytes(self.dil5_pk.as_bytes())
-                .expect("valid Dilithium5 public key from keypair"),
-        }
+        let ed448_vk = VerifyingKey::from_bytes(&vk_bytes)
+            .map_err(|_| SignatureError::InvalidEd448Key)?;
+        let dil5_pk = dilithium5::PublicKey::from_bytes(self.dil5_pk.as_bytes())
+            .map_err(|_| SignatureError::InvalidDilithiumKey)?;
+        Ok(HybridPublicKey { ed448_vk, dil5_pk })
     }
 }
 
@@ -212,7 +211,7 @@ mod tests {
         let msg = b"test message for hybrid signature";
 
         let sig = hybrid_sign(msg, &kp);
-        let pk = kp.public_key();
+        let pk = kp.public_key().unwrap();
 
         assert!(hybrid_verify(msg, &sig, &pk).is_ok());
     }
@@ -221,7 +220,7 @@ mod tests {
     fn hybrid_rejects_wrong_message() {
         let kp = generate_hybrid_keypair();
         let sig = hybrid_sign(b"original", &kp);
-        let pk = kp.public_key();
+        let pk = kp.public_key().unwrap();
 
         let result = hybrid_verify(b"tampered", &sig, &pk);
         assert!(result.is_err());
@@ -233,7 +232,7 @@ mod tests {
         let kp2 = generate_hybrid_keypair();
 
         let sig = hybrid_sign(b"test", &kp1);
-        let pk2 = kp2.public_key();
+        let pk2 = kp2.public_key().unwrap();
 
         let result = hybrid_verify(b"test", &sig, &pk2);
         assert!(result.is_err());
@@ -242,7 +241,7 @@ mod tests {
     #[test]
     fn public_key_serialization_roundtrip() {
         let kp = generate_hybrid_keypair();
-        let pk = kp.public_key();
+        let pk = kp.public_key().unwrap();
 
         let bytes = pk.to_bytes();
         assert_eq!(bytes.len(), HYBRID_PK_LEN);
@@ -262,7 +261,7 @@ mod tests {
         assert_eq!(bytes.len(), HYBRID_SIG_LEN);
 
         let sig2 = HybridSignature::from_bytes(&bytes).unwrap();
-        let pk = kp.public_key();
+        let pk = kp.public_key().unwrap();
         assert!(hybrid_verify(msg, &sig2, &pk).is_ok());
     }
 }
