@@ -5,7 +5,7 @@
 All scripts in link:scripts[`scripts`] are written for Bash and include:
 - `export-snapshot.sh`: Export SurrealDB provenance graph to IPFS/IPNS.
 - `rotate-keys.sh`: Rotate bastion and resolver keys.
-- `generate-sbom.sh`: Produce SBOMs for Podman/Wolfi containers.
+- `generate-sbom.sh`: Produce SBOMs for cerro-torre/Wolfi containers.
 
 == 🌐 Alternative Shells
 For scripts in other shells:

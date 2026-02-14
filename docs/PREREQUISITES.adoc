@@ -14,7 +14,7 @@ These will be checked and installed automatically by `just bootstrap` unless alr
 == External Services
 These must be installed and running separately:
 
-* **Podman** — container runtime (with Wolfi/Distroless base images for hardened builds)
+* **stapeln toolchain** — cerro-torre (build/sign), selur (IPC seal), vordr (runtime), selur-compose (orchestration) — with Wolfi/Distroless base images
 * **SurrealDB** — provenance graph and audit trail
 * **IPFS daemon** — content‑addressed storage and snapshot rehydration
 

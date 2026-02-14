@@ -46,7 +46,7 @@ If blocked, the Justfile automatically falls back to 8080.
 
 These will be checked and installed automatically by `just bootstrap` unless you already have them:
 
-* **Podman** with **Wolfi/Distroless base images** (for hardened containers)
+* **stapeln** container toolchain: **cerro-torre** (build/sign), **selur** (IPC seal), **vordr** (runtime), **selur-compose** (orchestration) — with Wolfi/Distroless base images
 * **Nickel** (policy language and contracts)
 * **Cap’n Proto** (schema/provenance serialization)
 * **jq** (JSON formatting and diffs)
@@ -56,7 +56,7 @@ These will be checked and installed automatically by `just bootstrap` unless you
 
 == Notes
 * `just bootstrap` will create required directories and attempt to install jq, capnproto, nickel, and deno.
-* Podman, SurrealDB, and IPFS should be installed and running separately; bootstrap will check and warn if missing.
+* stapeln toolchain (cerro-torre, selur, vordr), SurrealDB, and IPFS should be installed and running separately; bootstrap will check and warn if missing.
 * The GUI/PWA dev server defaults to port 8443 (TCP). If that port is occupied, it falls back to 8080.
   For QUIC/HTTP3 testing, you can enable Deno’s `--unstable` net APIs and bind to a UDP port in the well‑known range.
 
@@ -93,7 +93,7 @@ templater verify
 ├── surrealdb/        # Provenance graph schema + exports
 ├── docs/             # Documentation
 ├── scripts/          # Automation scripts
-├── infra/            # Podman/K8s manifests
+├── infra/            # Container manifests (stapeln/cerro-torre)
 └── licenses/         # Licensing information
 
 == 📝 Licensing

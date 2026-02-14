@@ -426,7 +426,7 @@ Email: privacy@example.com with subject: `[PRIVACY REQUEST] <Your request>`
 **Code transparency:**
 * Privacy-related code: https://github.com/yourorg/indieweb2-bastion
 * Smart contracts: Verified on Etherscan/Polygonscan
-* Reproducible builds: Docker images with SHA256 hashes
+* Reproducible builds: cerro-torre images with BLAKE3 hashes (.ctp bundles)
 
 **Audit reports:**
 * Privacy audit: [Link to audit report]

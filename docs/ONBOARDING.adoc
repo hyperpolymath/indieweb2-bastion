@@ -20,7 +20,7 @@ toc::[]
 
 == Prerequisites
 
-* Git, Node.js 20+, Docker/Podman
+* Git, Deno 2.x, stapeln toolchain (cerro-torre, selur, vordr)
 * MetaMask wallet (for blockchain interaction)
 * Testnet ETH (Sepolia faucet)
 

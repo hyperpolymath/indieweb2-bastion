@@ -6,7 +6,7 @@ This project uses a *three-tiered contribution model*:
 
 === 🔒 Perimeter 1: Core Systems (Maintainers Only)
 - **Scope**: Bastion ingress, oDNS core, GraphQL DNS schema, provenance export routines.
-- **Languages**: ReScript, Deno, Podman configs
+- **Languages**: ReScript, Deno, Nickel, stapeln configs
 - **Access**: Restricted to maintainers.
 - **Contribution Path**: Direct commits with full SPDX and compliance coverage.
 

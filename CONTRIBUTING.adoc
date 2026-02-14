@@ -63,7 +63,7 @@ See link:ONBOARDING.adoc[ONBOARDING.adoc] for detailed multi-chain setup.
 * Solidity tooling (Foundry/Hardhat)
 * dfx (Internet Computer SDK)
 * ReScript 11.0.1+
-* Docker (for local testnet)
+* stapeln toolchain — cerro-torre, selur, vordr (for containers and local testnet)
 
 == Types of Contributions
 
