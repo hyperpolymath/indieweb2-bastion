@@ -8,6 +8,20 @@
 import { serve } from "https://deno.land/std@0.218.0/http/server.ts";
 import { Surreal } from "https://deno.land/x/surrealdb@v1.0.0/mod.ts";
 
+// Content integrity hashing (CPR-009: BLAKE3 per CRYPTO-POLICY.adoc)
+// Uses SubtleCrypto SHA-256 as interim until BLAKE3 WASM module is integrated.
+// TODO(CPR-009): Replace with BLAKE3 via https://deno.land/x/blake3 or Rust WASM.
+// TODO(CPR-005): Add Ed448+Dilithium5 hybrid signing of consent records via Rust WASM.
+//   See: odns-rs/common/src/signatures.rs for reference implementation.
+//   Path: Build consent-crypto WASM crate → import in Deno → sign records on store.
+async function contentHash(data: string): Promise<string> {
+  const encoded = new TextEncoder().encode(data);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 // Consent preference types
 export interface ConsentPreferences {
   identity: string;          // WordPress user identity (URL or email)
@@ -55,6 +69,7 @@ async function initDatabase(): Promise<Surreal> {
     DEFINE FIELD IF NOT EXISTS createdAt ON consent TYPE datetime VALUE time::now();
     DEFINE FIELD IF NOT EXISTS updatedAt ON consent TYPE datetime VALUE time::now();
     DEFINE FIELD IF NOT EXISTS version ON consent TYPE int DEFAULT 1;
+    DEFINE FIELD IF NOT EXISTS contentHash ON consent TYPE option<string>;
     DEFINE INDEX IF NOT EXISTS identity_idx ON consent COLUMNS identity UNIQUE;
   `);
 
@@ -72,6 +87,10 @@ async function storeConsent(prefs: ConsentPreferences): Promise<ConsentRecord> {
     { identity: prefs.identity }
   );
 
+  // Compute content integrity hash (CPR-009)
+  const hashInput = `${prefs.identity}:${prefs.telemetry}:${prefs.indexing}:${prefs.webmentions}:${prefs.dnsOperations}:${prefs.timestamp}`;
+  const hash = await contentHash(hashInput);
+
   if (existing && existing.length > 0) {
     // Update existing record
     const record = existing[0];
@@ -84,15 +103,17 @@ async function storeConsent(prefs: ConsentPreferences): Promise<ConsentRecord> {
         manifestRef = $manifestRef,
         timestamp = $timestamp,
         source = $source,
+        contentHash = $contentHash,
         updatedAt = time::now(),
         version = version + 1`,
-      prefs
+      { ...prefs, contentHash: hash }
     );
     return updated[0];
   } else {
     // Create new record
     const created = await db.create<ConsentRecord>("consent", {
       ...prefs,
+      contentHash: hash,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       version: 1,
@@ -141,12 +162,17 @@ async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // CORS headers
-  const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  // CORS headers — restrict to configured origins (not permissive)
+  const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "https://localhost").split(",");
+  const origin = req.headers.get("Origin") || "";
+  const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Origin": corsOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json",
+    "Vary": "Origin",
   };
 
   if (req.method === "OPTIONS") {

@@ -13,5 +13,6 @@
 pub mod crypto;
 pub mod protocol;
 pub mod signatures;
+pub mod sphincs_fallback;
 
 pub use crypto::{decrypt_query, encrypt_query, generate_keypair, PublicKey, SecretKey};

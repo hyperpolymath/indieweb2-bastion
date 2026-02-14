@@ -93,28 +93,27 @@ Verify:  Both MUST pass --> Ok(())   |
 
 | Component               | Status       | Progress                   | Pct  |
 |--------------------------|-------------|----------------------------|------|
-| graphql-dns-api (Rust)   | Partial     | `██████░░░░` | 60%  |
+| graphql-dns-api (Rust)   | Partial     | `███████░░░` | 70%  |
 | odns-rs/proxy (Rust)     | Complete    | `██████████` | 100% |
 | odns-rs/resolver (Rust)  | Complete    | `██████████` | 100% |
 | odns-rs/signatures       | Complete    | `██████████` | 100% |
-| odns-proxy (Go)          | Deprecated  | `██████████` | 100% |
-| odns-resolver (Go)       | Deprecated  | `██████████` | 100% |
+| odns-rs/sphincs_fallback | Complete    | `██████████` | 100% |
 | consent-api (Deno)       | Production  | `████████░░` | 80%  |
 | webmention-limiter       | Partial     | `██████░░░░` | 60%  |
 | policy-gate (ReScript)   | Functional  | `████████░░` | 80%  |
 | crypto-policy (scheme)   | Defined     | `██████████` | 100% |
 | Nickel policy configs    | Complete    | `██████████` | 100% |
-| smart contracts          | Partial     | `████░░░░░░` | 40%  |
+| smart contracts          | Functional  | `██████░░░░` | 60%  |
 | container (stapeln)      | Complete    | `██████████` | 100% |
-| DNSSEC (Ed25519 interim) | Partial     | `██████░░░░` | 60%  |
-| PQ crypto (Kyber+Dilith) | oDNS+sigs   | `██████░░░░` | 60%  |
+| DNSSEC (hybrid)          | Complete    | `██████████` | 100% |
+| PQ crypto (Kyber+Dilith) | Integrated  | `████████░░` | 80%  |
+| SPHINCS+ fallback        | Complete    | `██████████` | 100% |
 | seccomp/SELinux          | Defined     | `████████░░` | 80%  |
 | fleet enrollment         | Complete    | `██████████` | 100% |
-| **Overall**              | **Active**  | `█████░░░░░` | **50%** |
+| **Overall**              | **Active**  | `██████░░░░` | **60%** |
 
 ### Legend
 
-- Deprecated = superseded by Rust rewrite, pending removal
 - Partial = functional but missing PQ crypto or full test coverage
 - Functional = working with validators/tests, may need v13 migration
 - Defined = policy/config written, not yet enforced in code
@@ -134,7 +133,7 @@ Verify:  Both MUST pass --> Ok(())   |
 | async-graphql        | 7.0     | GraphQL framework                    |
 | axum                 | 0.8     | HTTP framework                       |
 | ethers               | 2.0     | Ethereum/Polygon blockchain          |
-| ring                 | 0.17    | Ed25519 (interim, DNSSEC)            |
+| pqcrypto-sphincsplus | 0.7     | SPHINCS+ / SLH-DSA fallback (CPR-012)|
 | tokio                | 1.x     | Async runtime                        |
 | rustls               | 0.23    | TLS 1.3 (proxy)                      |
 | rescript             | 12.1    | Policy-gate (compiled via Deno)      |
@@ -149,14 +148,14 @@ Verify:  Both MUST pass --> Ok(())   |
 | CPR-002     | SHAKE3-512 (FIPS 202)      | Dep added       |
 | CPR-003     | Dilithium5-AES (ML-DSA-87) | odns-rs sigs    |
 | CPR-004     | Kyber-1024 (ML-KEM-1024)   | odns-rs crypto  |
-| CPR-005     | Ed448 + Dilithium5 hybrid  | odns-rs sigs    |
+| CPR-005     | Ed448 + Dilithium5 hybrid  | odns-rs + DNSSEC|
 | CPR-006     | XChaCha20-Poly1305         | odns-rs crypto  |
 | CPR-007     | HKDF-SHA3-512              | odns-rs crypto  |
 | CPR-008     | ChaCha20-DRBG              | OsRng used      |
 | CPR-009     | BLAKE3 + SHAKE3-512        | graphql-api     |
 | CPR-010     | QUIC + HTTP/3 + IPv6       | Not started     |
 | CPR-011     | WCAG 2.3 AAA               | Not started     |
-| CPR-012     | SPHINCS+ fallback          | Not started     |
+| CPR-012     | SPHINCS+ fallback          | odns-rs module  |
 | CPR-013     | Coq/Isabelle verification  | Not started     |
 
 ### Scan Results (panic-attack assail, 2026-02-14)

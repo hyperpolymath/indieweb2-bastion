@@ -39,6 +39,9 @@ chacha20poly1305 = "0.10"
 hkdf = "0.12"
 sha3 = "0.10"
 
+# Post-quantum fallback (SLH-DSA / SPHINCS+ — CPR-012)
+pqcrypto-sphincsplus = "0.7"
+
 # RNG (ChaCha20-DRBG — CPR-008)
 rand = "0.8"
 

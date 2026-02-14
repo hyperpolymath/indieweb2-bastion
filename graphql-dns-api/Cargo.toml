@@ -57,10 +57,14 @@ chacha20poly1305 = "0.10"        # XChaCha20-Poly1305 symmetric — CPR-006
 hkdf = "0.12"                    # HKDF-SHAKE512 key derivation — CPR-007
 rand = "0.8"                     # RNG framework — CPR-008
 rand_chacha = "0.3"              # ChaCha20-DRBG — CPR-008
-ring = "0.17"                    # Ed25519 (interim, DNSSEC compat — deprecated per CPR-005)
 base64 = "0.22"
 hex = "0.4"
 http = "1.0"                     # For CORS header types
+
+# Hybrid DNSSEC signatures — Ed448 + Dilithium5 (CPR-005)
+ed448-goldilocks-plus = "0.16"   # Classical signatures (Ed448, RFC 8032)
+pqcrypto-dilithium = "0.5"       # Post-quantum signatures (ML-DSA-87 / Dilithium5, FIPS 204)
+pqcrypto-traits = "0.3"          # Trait abstractions for pqcrypto
 
 [features]
 default = []
