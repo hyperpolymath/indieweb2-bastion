@@ -1,7 +1,7 @@
 ;; SPDX-License-Identifier: PMPL-1.0-or-later
 (ecosystem
   (metadata
-    (version "0.2.0")
+    (version "0.3.0")
     (last-updated "2026-02-14"))
   (project
     (name "indieweb2-bastion")
@@ -14,8 +14,11 @@
     (project (name "polygon") (relationship "blockchain-target") (notes "L2 provenance"))
     (project (name "internet-computer") (relationship "blockchain-target") (notes "Motoko canisters"))
     (project (name "hypatia") (relationship "ci-integration") (notes "Neurosymbolic CI/CD scanning"))
-    (project (name "gitbot-fleet") (relationship "bot-orchestration") (notes "Automated compliance"))
-    (project (name "verisimdb") (relationship "security-scanning") (notes "Vulnerability similarity database")))
+    (project (name "gitbot-fleet") (relationship "bot-orchestration") (notes "Enrolled: findings submitted"))
+    (project (name "echidna") (relationship "security-scanning") (notes "Configured: .echidnabot.toml"))
+    (project (name "git-private-farm") (relationship "forge-mirroring") (notes "Enrolled: GitHub + GitLab mirrors"))
+    (project (name "verisimdb") (relationship "security-scanning") (notes "Vulnerability similarity database"))
+    (project (name "panic-attacker") (relationship "security-scanning") (notes "assail scan: 3 medium findings")))
   (standards
     (standard "Rhodium 0.5" "Compliance framework")
     (standard "CRYPTO-POLICY.adoc" "Post-quantum + classical hybrid cryptographic standard")
