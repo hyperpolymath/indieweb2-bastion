@@ -46,7 +46,7 @@ pqcrypto-sphincsplus = "0.7"
 rand = "0.8"
 
 # DNS protocol
-hickory-proto = "0.24"
+hickory-proto = "0.25"
 
 # TLS
 tokio-rustls = "0.26"
