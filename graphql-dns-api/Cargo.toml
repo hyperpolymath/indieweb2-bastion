@@ -47,7 +47,7 @@ urlencoding = "2.1"
 
 # Configuration
 dotenvy = "0.15"
-config = "0.14"
+config = "0.15"
 
 # Cryptography — per CRYPTO-POLICY.adoc
 blake3 = "1.5"                   # Database hashing (BLAKE3-256) — CPR-009
